@@ -26,7 +26,7 @@ class FreeDSHTTPClient:
 
         try:
             self.resp = await self.session.get(f'http://{self.host}/events')
-            print(f'http://{self.host}/events', self.resp.status)
+            # print(f'http://{self.host}/events', self.resp.status)
         except:
             ### TODO: Send the exception to HASS, somehow
             print(repr(sys.exception()))
@@ -63,7 +63,7 @@ class FreeDSHTTPClient:
         if (self.stop):
             return
         else:
-            time.sleep(10)
+            await asyncio.sleep(10)
             print("Reconnecting...")
             await self.loop()
 
