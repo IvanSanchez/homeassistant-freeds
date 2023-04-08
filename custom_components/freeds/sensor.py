@@ -21,8 +21,6 @@ from homeassistant.const import (
 
 import random
 
-from homeassistant.helpers.entity import Entity
-
 from .const import DOMAIN
 
 from .freeds_http_client import FreeDSHTTPClient
@@ -59,10 +57,21 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             http_client=httpClient
         ),
         FreeDSSensor(
+            label="Surplus Load",
+            unit=UnitOfPower.WATT,
+            dev_class=SensorDeviceClass.POWER,
+            icon="mdi:flash",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="loadCalcWatts",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
             label="PWM frequency",
             unit=UnitOfFrequency.HERTZ,
             dev_class=SensorDeviceClass.FREQUENCY,
-            icon="mdi:sine-wave",
+            icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="pwmfrec",
@@ -73,20 +82,129 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             label="PWM",
             unit=PERCENTAGE,
             # dev_class=SensorDeviceClass.POWER_FACTOR,
-            icon="mdi:sine-wave",
+            icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="pwm",
             uniqueid=uniqueid,
             http_client=httpClient
         ),
-
+        FreeDSSensor(
+            label="Heater Temperature",
+            unit=UnitOfTemperature.CELSIUS,
+            dev_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer-water",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="tempTermo",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="TRIAC Temperature",
+            unit=UnitOfTemperature.CELSIUS,
+            dev_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="tempTriac",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Custom Temperature",
+            unit=UnitOfTemperature.CELSIUS,
+            dev_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="tempCustom",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Surplus Energy (Today)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:resistor",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwToday",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Surplus Energy (Yesterday)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:resistor",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwYesterday",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Surplus Energy (Total)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:resistor",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwTotal",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Exported Energy (Today)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:transmission-tower-import",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwExportToday",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Exported Energy (Yesterday)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:transmission-tower-import",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwExportYesterday",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Exported Energy (Total)",
+            unit=UnitOfEnergy.KILO_WATT_HOUR,
+            dev_class=SensorDeviceClass.ENERGY,
+            icon="mdi:transmission-tower-import",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="KwExportTotal",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
+        FreeDSSensor(
+            label="Voltage",
+            unit=UnitOfElectricPotential.VOLT,
+            dev_class=SensorDeviceClass.VOLTAGE,
+            icon="mdi:sine-wave",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="mvoltage",
+            uniqueid=uniqueid,
+            http_client=httpClient
+        ),
     ]
 
     async_add_entities(sensors)
 
 
-class FreeDSSensor(Entity):
+class FreeDSSensor(SensorEntity):
     """An individual FreeDSsensor entry."""
 
     # should_poll = False
@@ -103,7 +221,6 @@ class FreeDSSensor(Entity):
                   http_client,
                   dev_class = None,
                   entity_category = None):
-        self.label = label
         self._icon = icon
         self._unit_of_measurement = unit
         self._device_class = dev_class
@@ -111,14 +228,19 @@ class FreeDSSensor(Entity):
         self._entity_category = entity_category
         self.json_field = json_field
         self._name = f"FreeDS {uniqueid} {label}"
-        self._unique_id = f"{uniqueid}-{json_field}"
+        # self._name = label
         self.freeds_unique_id = uniqueid
 
+        self._id = f"{uniqueid}_{json_field}"
         http_client.register(json_field, self.handle_update)
 
     def handle_update(self, value):
         # print ("FreeDS sensor handling update from http client")
-        self.last_known_value = value
+        if (self.device_class == SensorDeviceClass.TEMPERATURE and value == "-127.0"):
+            self.last_known_value = None
+        else:
+            self.last_known_value = value
+
         self.async_write_ha_state()
 
     def available(self) -> bool:
@@ -133,9 +255,11 @@ class FreeDSSensor(Entity):
     def device_info(self):
         """Return information to link this entity with the correct device."""
         return {
-            "identifiers": {
-                (DOMAIN, self.freeds_unique_id),
-            }
+            "identifiers": { (DOMAIN, self.freeds_unique_id) },
+            "name": f"FreeDS {self.freeds_unique_id}",
+            # "sw_version": None,
+            # "model": None,
+            # "manufacturer": None,
         }
 
     @property
@@ -151,10 +275,5 @@ class FreeDSSensor(Entity):
     @property
     def name(self): return self._name
     @property
-    def unique_id(self): return self._unique_id
-
-    # @property
-
-
-
+    def unique_id(self): return self._id
 
