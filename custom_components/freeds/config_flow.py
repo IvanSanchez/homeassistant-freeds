@@ -10,10 +10,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 ### TODO: Add HTTP timeout (for the persistent HTTP connection to the FreeDS device)
-### Right now a value f 30 seconds is hardcoded.
+### Right now a value of 30 seconds is hardcoded.
 HOST_SCHEMA: Final = vol.Schema({vol.Required(CONF_HOST): str})
 # HOST_SCHEMA = vol.Schema({("host"): str})
-
 
 
 
@@ -27,17 +26,14 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # Schema only has a host (hostname/FQDN/ip address)
     host: str=""
-    # info: dict[str, Any] = {}
     uniqueid: str=""
-
-    print ("FreeDSConfigFlow")
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
 
-        print ("async_step_user", user_input)
+        # print ("async_step_user", user_input)
 
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -48,9 +44,10 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # info = self._async_get_info(host)
                 uniqueid = "abcd"
                 await self.async_set_unique_id(uniqueid)
-                return self.async_create_entry(title=f"FreeDS {uniqueid}", data={"host": user_input["host"], "uniqueid": uniqueid})
-            # except DeviceConnecionError:
-            #     errors["base"] = "cannot_connect"
+                return self.async_create_entry(title=f"FreeDS {uniqueid}", data={
+                    "host": user_input["host"],
+                    "uniqueid": uniqueid
+                })
             # except CannotConnect:
             #     errors["base"] = "cannot_connect"
             # except InvalidHost:
