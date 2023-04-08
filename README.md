@@ -2,8 +2,6 @@
 
 `homeassistant-freeds` is a [Home Assistant](https://www.home-assistant.io) integration for [FreeDS](https://freeds.es/) devices (power surplus management devices).
 
-
-
 ## Installation
 
 #### Guided installation
@@ -26,6 +24,10 @@ Restart Home Assistant to ensure the integration can be detected.
 Use the Home Assistant GUI to add a new integration (settings → devices & services → add new integration). You should find the FreeDS integration in the list.
 
 Enter the IP address (or hostname) of your FreeDS device. Note that **no checks are made to ensure that there is a FreeDS device at that IP address**.
+
+Home Assistant should display a new *Device* with a dozen *Sensors*, such as:
+
+![Screenshot of FreeDS sensors in Home Assistant](./screenshot.png)
 
 ## License
 

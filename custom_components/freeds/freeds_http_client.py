@@ -63,16 +63,18 @@ class FreeDSHTTPClient:
         if (self.resp is not None):
             self.resp.close()
 
-        # Call all handlers with None, to signify device is unavailable
-        for field, handler in self.handlers.items():
-            handler(None)
-
         if (self.stop):
             return
         else:
             await asyncio.sleep(10 * self.retries)
             self.retries += 1
             _LOGGER.info(f"{self.host} reconnecting...")
+
+            # Call all handlers with None, to signify device is unavailable
+            for field, handler in self.handlers.items():
+                handler(None)
+
+
             await self.loop()
 
 
