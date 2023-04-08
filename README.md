@@ -9,7 +9,9 @@
 - Enable the [HACS](https://hacs.xyz/) integration in your Home Assistant instance.
 - Use the side menu to browse HACS.
 - Navigate to "Integrations", then use the overflow menu (three dots at the top-left) to add a Custom Repository.
-- Enter the URL for this repository: `https://gitlab.com/IvanSanchez/homeassistant-freeds`
+- Enter the URL `https://github.com/IvanSanchez/homeassistant-freeds`, of type "Integration"
+- You should see a new box labelled "FreeDS". Click on it and follow HACS' instructions to download and enable the integration.
+- Restart Home Assistant when HACS tells you to.
 
 #### Manual installation
 
@@ -32,6 +34,14 @@ Enter the IP address (or hostname) of your FreeDS device. Note that **no checks 
 Home Assistant should display a new *Device* with a dozen *Sensors*, such as:
 
 ![Screenshot of FreeDS sensors in Home Assistant](./screenshot.png)
+
+## Bugs? Comments?
+
+Use the gitlab issue tracker at https://gitlab.com/IvanSanchez/homeassistant-freeds/-/issues
+
+(Yes, it's Git**Lab** and not Git**Hub**. Development happens at GitLab. The GitHub repo is only for HACS compatibility.)
+
+Please keep in mind that it's an issue tracker, and not a discussion forum. I recommend reading ["How to Report Bugs Effectively"](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html) if you've never written into an issue tracker before.
 
 ## License
 
