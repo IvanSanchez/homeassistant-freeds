@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Bug reports or comments
+    url: https://gitlab.com/IvanSanchez/homeassistant-freeds/-/issues
+    about: >
+      Development of `homeassistant-freeds` happens in GitLab, **not** in GitHub.
+      You should use https://gitlab.com/IvanSanchez/homeassistant-freeds/-/issues
+      to report bugs or provide comments.
+
+      The GitHub repository exists only to make HACS work.
