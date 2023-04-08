@@ -17,6 +17,10 @@ Download the files from this repository. Copy the `custom_components/freeds/` di
 
 e.g. if your configuration file is in `/home/homeassistant/.homeassistant/configuration.yaml`, then the files from this integration should be copied to `/home/homeassistant/.homeassistant/custom_components/freeds/`.
 
+The integration needs the [`getmac` pypi module](https://pypi.org/project/getmac/), so you'll probably need to install it within homeassistant's virtualenv. In other words:
+- Activate HASS virtualenv (likely running `cd /srv/homeassistant` then `source bin/activate`)
+- Install `getmac` (run `pip3 install getmac`)
+
 Restart Home Assistant to ensure the integration can be detected.
 
 ## Usage

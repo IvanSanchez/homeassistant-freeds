@@ -5,6 +5,8 @@ import voluptuous as vol
 import logging
 from typing import Any, Final
 from homeassistant.data_entry_flow import FlowResult
+from getmac import get_mac_address
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,13 +43,20 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host: str = user_input["host"]
             try:
                 ### FIXME!!! Grab the unique ID from the FreeDS device, somehow
-                # info = self._async_get_info(host)
-                uniqueid = "abcd"
-                await self.async_set_unique_id(uniqueid)
-                return self.async_create_entry(title=f"FreeDS {uniqueid}", data={
-                    "host": user_input["host"],
-                    "uniqueid": uniqueid
-                })
+                info = self._async_get_info(host)
+
+                print (info)
+
+                if (info['uniqueid'] is None):
+                    errors["base"] = "invalid_host"
+                else:
+                    await self.async_set_unique_id(info['uniqueid'])
+                    return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
+                        "host": user_input["host"],
+                        "uniqueid": info['uniqueid'],
+                        "fwversion": info['fwversion']
+                    })
+
             # except CannotConnect:
             #     errors["base"] = "cannot_connect"
             # except InvalidHost:
@@ -61,9 +70,28 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-    # def _async_get_info(self, host):
-        ### TODO: Fetch http://${host}/masterdata, check version
-        ### Somehow get a unique ID
-        # self.id = "abcd"
-        # return None
+    def _async_get_info(self, host):
+
+        # Fetch the host's MAC address.
+        # HASS config allows for a generic hostname/ip/FQDN input, but
+        # the `getmac` package works with either IP or hostname, explicitly.
+        # This looks for the MAC daisy-chaining getmac methods.
+        mac = get_mac_address(ip=host)
+        if (mac is None):
+            mac = get_mac_address(hostname=host)
+            if (mac is None):
+                mac = get_mac_address(ip6=host)
+
+        uniqueid = None
+        if (mac is not None):
+            # ID is the two last bytes of the MAC; one goes from characters 12 to 14,
+            # the other from 15 to 17
+            uniqueid = mac[12:14] + mac[15:17]
+
+        ### FIXME: Fetch the firmware version and compilation date
+
+        return {
+            'uniqueid': uniqueid,
+            'fwversion': None
+        }
 
