@@ -1,0 +1,5 @@
+{
+  "domains": ["sensor"],
+  "render_readme": true,
+  "name": "FreeDS"
+}
