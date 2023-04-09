@@ -31,7 +31,7 @@ Use the Home Assistant GUI to add a new integration (settings → devices & serv
 
 Enter the IP address (or hostname) of your FreeDS device. Note that **no checks are made to ensure that there is a FreeDS device at that IP address**.
 
-Home Assistant should display a new *Device* with a dozen *Sensors*, such as:
+Home Assistant should display a new *Device* with two *Switches* (for PWM management) and a couple dozen *Sensors*, such as:
 
 ![Screenshot of FreeDS sensors in Home Assistant](./screenshot.png)
 
