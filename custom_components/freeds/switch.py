@@ -99,8 +99,6 @@ class FreeDSSwitch(CoordinatorEntity, BinarySensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
-        print ("updated switch; coordinator data: ", self.coordinator.data)
-
         if (self.coordinator.data is None):
             # This means the coordinator couldn't fetch any data at all,
             # i.e. an error
