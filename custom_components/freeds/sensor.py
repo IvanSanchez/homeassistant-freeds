@@ -85,9 +85,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             coordinator=coordinator
         ),
         FreeDSSensor(
-            label="PWM",
+            label="PWM %",
             unit=PERCENTAGE,
-            # dev_class=SensorDeviceClass.POWER_FACTOR,
             icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
@@ -95,7 +94,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             uniqueid=uniqueid,
             coordinator=coordinator
         ),
-        FreeDSSensor(
+        FreeDSTemperatureSensor(
             label="Heater Temperature",
             unit=UnitOfTemperature.CELSIUS,
             dev_class=SensorDeviceClass.TEMPERATURE,
@@ -106,7 +105,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             uniqueid=uniqueid,
             coordinator=coordinator
         ),
-        FreeDSSensor(
+        FreeDSTemperatureSensor(
             label="TRIAC Temperature",
             unit=UnitOfTemperature.CELSIUS,
             dev_class=SensorDeviceClass.TEMPERATURE,
@@ -117,7 +116,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             uniqueid=uniqueid,
             coordinator=coordinator
         ),
-        FreeDSSensor(
+        FreeDSTemperatureSensor(
             label="Custom Temperature",
             unit=UnitOfTemperature.CELSIUS,
             dev_class=SensorDeviceClass.TEMPERATURE,
@@ -200,7 +199,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             dev_class=SensorDeviceClass.VOLTAGE,
             icon="mdi:sine-wave",
             state_class=SensorStateClass.MEASUREMENT,
-            # entity_category=EntityCategory.DIAGNOSTIC,
+            entity_category=EntityCategory.DIAGNOSTIC,
             json_field="mvoltage",
             uniqueid=uniqueid,
             coordinator=coordinator
@@ -212,8 +211,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 class FreeDSSensor(CoordinatorEntity, SensorEntity):
     """An individual FreeDSsensor entry."""
-
-    # should_poll = False
 
     _state = None
 
@@ -250,13 +247,9 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
             return
 
         value = self.coordinator.data[self.json_field]
-
-        if (self.device_class == SensorDeviceClass.TEMPERATURE and value == "-127.0"):
-            self._state = None
-        else:
-            self._state = value
-
-        self.async_write_ha_state()
+        if (value != self._state):
+            self._state = self.coordinator.data[self.json_field]
+            self.async_write_ha_state()
 
     @property
     def state(self):
@@ -287,3 +280,24 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
     def name(self): return self._name
     @property
     def unique_id(self): return self._id
+
+
+class FreeDSTemperatureSensor(FreeDSSensor):
+    # As FreeDSSensor, but handles the literal "-127.0" string as None.
+    # FreeDS sends "-127.0" as the temperature value when there is no
+    # temperature probe.
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+
+        if (not self.json_field in self.coordinator.data.keys()):
+            return
+
+        value = self.coordinator.data[self.json_field]
+
+        if (value == "-127.0"):
+            value = None
+
+        if (value != self._state):
+            self._state = value
+            self.async_write_ha_state()
