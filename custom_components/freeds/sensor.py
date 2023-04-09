@@ -28,7 +28,11 @@ from homeassistant.const import (
 
 import random
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    WORKING_MODES
+)
+
 
 import traceback
 
@@ -204,6 +208,17 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             uniqueid=uniqueid,
             coordinator=coordinator
         ),
+        FreeDSWorkingModeSensor(
+            label="Working Mode",
+            unit=None,
+            dev_class=SensorDeviceClass.ENUM,
+            icon="mdi:lan",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="wversion",
+            uniqueid=uniqueid,
+            coordinator=coordinator
+        ),
     ]
 
     async_add_entities(sensors)
@@ -301,3 +316,15 @@ class FreeDSTemperatureSensor(FreeDSSensor):
         if (value != self._state):
             self._state = value
             self.async_write_ha_state()
+
+class FreeDSWorkingModeSensor(FreeDSSensor):
+    # As FreeDSSensor, but translates the (known) numerical working modes into
+    # readable strings, as per the defined constants. e.g. working mode 25
+    # gets translated to "Shelly EM"
+
+    @property
+    def state(self):
+        if (self._state is None):
+            return None
+        else:
+            return WORKING_MODES[self._state]
