@@ -12,7 +12,7 @@ PLATFORMS: list[str] = ["sensor", "binary_sensor"]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a FreeDS sensor from a config entry."""
 
-    print ("freeds setup", entry.data)
+    # print ("freeds setup", entry.data)
 
     uniqueid = entry.data['uniqueid']
 
@@ -31,7 +31,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # This is called when an entry/configured device is to be removed. The class
     # needs to unload itself, and remove callbacks. See the classes for further
     # details
-    print ("freeds unload entry", entry.data)
+    # print ("freeds unload entry", entry.data)
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     # if unload_ok:

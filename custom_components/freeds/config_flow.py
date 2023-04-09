@@ -45,7 +45,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ### FIXME!!! Grab the unique ID from the FreeDS device, somehow
                 info = self._async_get_info(host)
 
-                print (info)
+                # print (info)
 
                 if (info['uniqueid'] is None):
                     errors["base"] = "invalid_host"
