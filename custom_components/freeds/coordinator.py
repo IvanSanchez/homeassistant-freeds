@@ -119,13 +119,13 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         self.running = False
 
     async def async_send_toggle_button(self, button_idx):
-        print(f"Sending HTTP POST to toggle button {button_idx}")
+        self.logger.info(f"Sending HTTP POST to toggle button {button_idx}")
         # self.logger.debug(f"Sending HTTP POST to toggle button {button_idx}")
 
         post_response = await self.session.post(
             f'http://{self.host}:{http_port}/togglebuttons',
             data={"data": button_idx})
 
-        print (post_response.status)
-        print (await post_response.text() )
+        self.logger.info(f"Response status to button toggle: {post_response.status}")
+        await post_response.text()
 
