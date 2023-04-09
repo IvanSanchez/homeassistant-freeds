@@ -1,0 +1,23 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+        },
+        "error": {
+            "already_configured": "A FreeDS with the same MAC address already exists.",
+            "invalid_host": "Cannot connect to the FreeDS.",
+            "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+            "unknown": "[%key:common::config_flow::error::unknown%]"
+        },
+        "step": {
+            "user": {
+                "description": "Make sure your FreeDS is on, and that it has a stable IP address.",
+                "data": {
+                    "host": "IP address or hostname",
+                    "password": "[%key:common::config_flow::data::password%]",
+                    "username": "[%key:common::config_flow::data::username%]"
+                }
+            }
+        }
+   }
+}

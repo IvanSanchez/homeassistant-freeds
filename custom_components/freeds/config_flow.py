@@ -51,6 +51,8 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors["base"] = "invalid_host"
                 else:
                     await self.async_set_unique_id(info['uniqueid'])
+                    self._abort_if_unique_id_configured()
+
                     return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
                         "host": user_input["host"],
                         "uniqueid": info['uniqueid'],
