@@ -95,7 +95,7 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     # should_poll = False
 
-    _state = None
+    # _attr_is_on = False
 
     def __init__ (self,
                   label,
@@ -125,8 +125,11 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
         if (not self.json_field in self.coordinator.data.keys()):
             return
 
-        self._attr_is_on = self.coordinator.data[self.json_field]
-        self.async_write_ha_state()
+        value = self.coordinator.data[self.json_field]
+
+        if (value != self._attr_is_on):
+            self._attr_is_on = self.coordinator.data[self.json_field]
+            self.async_write_ha_state()
 
     @property
     def device_info(self):
