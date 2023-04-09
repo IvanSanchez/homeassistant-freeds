@@ -19,7 +19,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-timeout = aiohttp.ClientTimeout(total=30, sock_read=30)
+timeout = aiohttp.ClientTimeout(total=None, sock_read=3)
 
 class FreeDSCoordinator(DataUpdateCoordinator):
     """FreeDS coordinator."""
