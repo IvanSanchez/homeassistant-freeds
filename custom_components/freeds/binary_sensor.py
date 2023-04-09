@@ -122,14 +122,22 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
-        if (not self.json_field in self.coordinator.data.keys()):
-            return
+        if (self.coordinator.data is None):
+            # This means the coordinator couldn't fetch any data at all,
+            # i.e. an error
+            if (self._attr_available):
+                self._attr_available = False
+                self.async_write_ha_state()
 
-        value = self.coordinator.data[self.json_field]
-
-        if (value != self._attr_is_on):
-            self._attr_is_on = self.coordinator.data[self.json_field]
-            self.async_write_ha_state()
+        elif (not self.json_field in self.coordinator.data.keys()):
+            # Last coordinator update didn't include data for this entity
+            pass
+        else:
+            self._attr_available = True
+            value = self.coordinator.data[self.json_field]
+            if (value != self._attr_is_on):
+                self._attr_is_on = self.coordinator.data[self.json_field]
+                self.async_write_ha_state()
 
     @property
     def device_info(self):

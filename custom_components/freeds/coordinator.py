@@ -72,7 +72,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 # print(f'http://{self.host}/events', self.resp.status)
                 self.logger.info(f'Status response from http://{self.host}:{http_port}/events is {self.resp.status}')
             except Exception as err:
-                self.async_set_update_error(sys.exception())
+                # print("error connecting", err)
+                # self.async_set_update_error(sys.exception())
+                self.async_set_update_error(Exception(err))
                 # _LOGGER.exception(sys.exception())
 
             if (self.resp):
@@ -86,7 +88,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                     except Exception as err:
                         # _LOGGER.error(f"{self.host} HTTP timeout")
                         # _LOGGER.error(err)
-                        self.async_set_update_error(sys.exception())
+                        # print("error reading", err)
+                        # self.async_set_update_error(sys.exception())
+                        self.async_set_update_error(Exception(err))
                         break;
                     else:
                         self.retries = 1
@@ -110,6 +114,13 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
             if (not self._listeners):
                 break;
+
+            if (self.retries == 2):
+                # Marks entities as "not available" at the *second* consecutive
+                # error
+                self.data = None
+                self.last_update_success = False
+                self.async_update_listeners()
 
             await asyncio.sleep(10 * self.retries)
             self.retries += 1

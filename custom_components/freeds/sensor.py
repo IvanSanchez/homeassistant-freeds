@@ -258,13 +258,21 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
-        if (not self.json_field in self.coordinator.data.keys()):
-            return
+        if (self.coordinator.data is None):
+            # This means the coordinator couldn't fetch any data at all,
+            # i.e. an error
+            if (self._state is not None):
+                self._state = None
+                self.async_write_ha_state()
 
-        value = self.coordinator.data[self.json_field]
-        if (value != self._state):
-            self._state = self.coordinator.data[self.json_field]
-            self.async_write_ha_state()
+        elif (not self.json_field in self.coordinator.data.keys()):
+            # Last coordinator update didn't include data for this entity
+            pass
+        else:
+            value = self.coordinator.data[self.json_field]
+            if (value != self._state):
+                self._state = self.coordinator.data[self.json_field]
+                self.async_write_ha_state()
 
     @property
     def state(self):
@@ -305,17 +313,25 @@ class FreeDSTemperatureSensor(FreeDSSensor):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
-        if (not self.json_field in self.coordinator.data.keys()):
-            return
+        if (self.coordinator.data is None):
+            # This means the coordinator couldn't fetch any data at all,
+            # i.e. an error
+            if (self._state is not None):
+                self._state = None
+                self.async_write_ha_state()
 
-        value = self.coordinator.data[self.json_field]
+        elif (not self.json_field in self.coordinator.data.keys()):
+            # Last coordinator update didn't include data for this entity
+            pass
+        else:
+            value = self.coordinator.data[self.json_field]
 
-        if (value == "-127.0"):
-            value = None
+            if (value == "-127.0"):
+                value = None
 
-        if (value != self._state):
-            self._state = value
-            self.async_write_ha_state()
+            if (value != self._state):
+                self._state = value
+                self.async_write_ha_state()
 
 class FreeDSWorkingModeSensor(FreeDSSensor):
     # As FreeDSSensor, but translates the (known) numerical working modes into
