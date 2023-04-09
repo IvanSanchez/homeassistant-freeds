@@ -91,11 +91,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """An individual FreeDSsensor entry."""
-
-    # should_poll = False
-
-    # _attr_is_on = False
+    """An individual FreeDSSensor entry for binary states."""
 
     def __init__ (self,
                   label,
@@ -109,14 +105,21 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator, context=json_field)
 
-        self._icon = icon
-        self._device_class = dev_class
-        self._entity_category = entity_category
-        self.json_field = json_field
-        self._name = f"FreeDS {uniqueid} {label}"
-        self.freeds_unique_id = uniqueid
 
-        self._id = f"{uniqueid}_{json_field}"
+       # Instance attributes built into Entity:
+        self._attr_icon = icon
+        self._attr_entity_category = entity_category
+        self._attr_name = f"FreeDS {uniqueid} {label}"
+        self._attr_unique_id = f"{uniqueid}_{json_field}"
+        self._attr_entity_category = entity_category
+        self._attr_available = False
+
+        # Instance attributes built into BinarySensorEntity
+        self._attr_device_class = dev_class
+        self._attr_is_on = None
+
+        self.freeds_unique_id = uniqueid
+        self.json_field = json_field
 
 
     def _handle_coordinator_update(self) -> None:
@@ -133,10 +136,10 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
             # Last coordinator update didn't include data for this entity
             pass
         else:
-            self._attr_available = True
             value = self.coordinator.data[self.json_field]
-            if (value != self._attr_is_on):
-                self._attr_is_on = self.coordinator.data[self.json_field]
+            if (not self._attr_available or value != self._attr_is_on):
+                self._attr_available = True
+                self._attr_is_on = value
                 self.async_write_ha_state()
 
     @property
@@ -149,14 +152,3 @@ class FreeDSBinarySensor(CoordinatorEntity, BinarySensorEntity):
             # "model": None,
             # "manufacturer": None,
         }
-
-    @property
-    def icon(self): return self._icon
-    @property
-    def device_class(self): return self._device_class
-    @property
-    def entity_category(self): return self._entity_category
-    @property
-    def name(self): return self._name
-    @property
-    def unique_id(self): return self._id
