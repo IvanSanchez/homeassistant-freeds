@@ -213,7 +213,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             unit=None,
             dev_class=SensorDeviceClass.ENUM,
             icon="mdi:lan",
-            state_class=SensorStateClass.MEASUREMENT,
+            state_class=None,
             entity_category=EntityCategory.DIAGNOSTIC,
             json_field="wversion",
             uniqueid=uniqueid,
@@ -227,7 +227,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class FreeDSSensor(CoordinatorEntity, SensorEntity):
     """An individual FreeDSsensor entry."""
 
-    _state = None
+    # native_value = None
 
     def __init__ (self,
                   label,
@@ -243,17 +243,21 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator, context=json_field)
 
-        self._icon = icon
-        self._unit_of_measurement = unit
-        self._device_class = dev_class
-        self._state_class = state_class
-        self._entity_category = entity_category
-        self.json_field = json_field
-        self._name = f"FreeDS {uniqueid} {label}"
+        # Instance attributes built into Entity:
+        self._attr_icon = icon
+        self._attr_entity_category = entity_category
+        self._attr_name = f"FreeDS {uniqueid} {label}"
+        self._attr_unique_id = f"{uniqueid}_{json_field}"
+        self._attr_native_unit_of_measurement = unit
+        self._attr_device_class = dev_class
+        self._attr_available = False
+
+        # Instance attributes built into Sensor:
+        self._attr_state_class = state_class
+        self._attr_native_value = None
+
         self.freeds_unique_id = uniqueid
-
-        self._id = f"{uniqueid}_{json_field}"
-
+        self.json_field = json_field
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
@@ -261,8 +265,8 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
         if (self.coordinator.data is None):
             # This means the coordinator couldn't fetch any data at all,
             # i.e. an error
-            if (self._state is not None):
-                self._state = None
+            if (self._attr_available):
+                self._attr_available = False
                 self.async_write_ha_state()
 
         elif (not self.json_field in self.coordinator.data.keys()):
@@ -270,13 +274,11 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
             pass
         else:
             value = self.coordinator.data[self.json_field]
-            if (value != self._state):
-                self._state = self.coordinator.data[self.json_field]
+            if (not self._attr_available or value != self._attr_native_value):
+                self._attr_available = True
+                self._attr_native_value = self.coordinator.data[self.json_field]
                 self.async_write_ha_state()
 
-    @property
-    def state(self):
-        return self._state
 
     @property
     def device_info(self):
@@ -289,49 +291,16 @@ class FreeDSSensor(CoordinatorEntity, SensorEntity):
             # "manufacturer": None,
         }
 
-    @property
-    def icon(self): return self._icon
-    @property
-    def unit_of_measurement(self): return self._unit_of_measurement
-    @property
-    def device_class(self): return self._device_class
-    @property
-    def state_class(self): return self._state_class
-    @property
-    def entity_category(self): return self._entity_category
-    @property
-    def name(self): return self._name
-    @property
-    def unique_id(self): return self._id
-
 
 class FreeDSTemperatureSensor(FreeDSSensor):
     # As FreeDSSensor, but handles the literal "-127.0" string as None.
     # FreeDS sends "-127.0" as the temperature value when there is no
     # temperature probe.
 
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
+    @property
+    def available(self):
+        return (self._attr_native_value != "-127.0")
 
-        if (self.coordinator.data is None):
-            # This means the coordinator couldn't fetch any data at all,
-            # i.e. an error
-            if (self._state is not None):
-                self._state = None
-                self.async_write_ha_state()
-
-        elif (not self.json_field in self.coordinator.data.keys()):
-            # Last coordinator update didn't include data for this entity
-            pass
-        else:
-            value = self.coordinator.data[self.json_field]
-
-            if (value == "-127.0"):
-                value = None
-
-            if (value != self._state):
-                self._state = value
-                self.async_write_ha_state()
 
 class FreeDSWorkingModeSensor(FreeDSSensor):
     # As FreeDSSensor, but translates the (known) numerical working modes into
@@ -339,8 +308,8 @@ class FreeDSWorkingModeSensor(FreeDSSensor):
     # gets translated to "Shelly EM"
 
     @property
-    def state(self):
-        if (self._state is None):
+    def native_value(self):
+        if (self._attr_native_value is None):
             return None
         else:
-            return WORKING_MODES[self._state]
+            return WORKING_MODES[self._attr_native_value]
