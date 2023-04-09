@@ -7,7 +7,7 @@ from . import sensor
 from .const import DOMAIN
 from .coordinator import FreeDSCoordinator
 
-PLATFORMS: list[str] = ["sensor"]
+PLATFORMS: list[str] = ["sensor", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a FreeDS sensor from a config entry."""
