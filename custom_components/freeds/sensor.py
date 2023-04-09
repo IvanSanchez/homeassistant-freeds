@@ -9,6 +9,13 @@ from homeassistant.components.sensor import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.entity import EntityCategory
+
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from homeassistant.const import (
     UnitOfPower,
@@ -23,15 +30,14 @@ import random
 
 from .const import DOMAIN
 
-from .freeds_http_client import FreeDSHTTPClient
+import traceback
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add sensors for passed config_entry in HA."""
-    print ("freeds/sensor.py async create entry", config_entry.data)
+
+    coordinator = hass.data[DOMAIN][config_entry.data['uniqueid']]
 
     uniqueid = config_entry.data["uniqueid"]
-
-    httpClient = FreeDSHTTPClient(config_entry.data["host"])
 
     sensors = [
         FreeDSSensor(
@@ -43,7 +49,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="wsolar",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Grid Power",
@@ -54,7 +60,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="wgrid",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Surplus Load",
@@ -65,7 +71,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="loadCalcWatts",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="PWM frequency",
@@ -73,10 +79,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             dev_class=SensorDeviceClass.FREQUENCY,
             icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
-            # entity_category=EntityCategory.DIAGNOSTIC,
+            entity_category=EntityCategory.DIAGNOSTIC,
             json_field="pwmfrec",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="PWM",
@@ -87,7 +93,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="pwm",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Heater Temperature",
@@ -98,7 +104,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="tempTermo",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="TRIAC Temperature",
@@ -109,7 +115,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="tempTriac",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Custom Temperature",
@@ -120,7 +126,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="tempCustom",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Surplus Energy (Today)",
@@ -131,7 +137,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwToday",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Surplus Energy (Yesterday)",
@@ -142,7 +148,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwYesterday",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Surplus Energy (Total)",
@@ -153,7 +159,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwTotal",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Exported Energy (Today)",
@@ -164,7 +170,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwExportToday",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Exported Energy (Yesterday)",
@@ -175,7 +181,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwExportYesterday",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Exported Energy (Total)",
@@ -186,7 +192,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="KwExportTotal",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
         FreeDSSensor(
             label="Voltage",
@@ -197,19 +203,19 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="mvoltage",
             uniqueid=uniqueid,
-            http_client=httpClient
+            coordinator=coordinator
         ),
     ]
 
     async_add_entities(sensors)
 
 
-class FreeDSSensor(SensorEntity):
+class FreeDSSensor(CoordinatorEntity, SensorEntity):
     """An individual FreeDSsensor entry."""
 
     # should_poll = False
 
-    last_known_value = None
+    _state = None
 
     def __init__ (self,
                   label,
@@ -218,9 +224,13 @@ class FreeDSSensor(SensorEntity):
                   state_class,
                   json_field,
                   uniqueid,
-                  http_client,
+                  coordinator,
                   dev_class = None,
                   entity_category = None):
+
+        """Pass coordinator to CoordinatorEntity."""
+        super().__init__(coordinator, context=json_field)
+
         self._icon = icon
         self._unit_of_measurement = unit
         self._device_class = dev_class
@@ -228,28 +238,29 @@ class FreeDSSensor(SensorEntity):
         self._entity_category = entity_category
         self.json_field = json_field
         self._name = f"FreeDS {uniqueid} {label}"
-        # self._name = label
         self.freeds_unique_id = uniqueid
 
         self._id = f"{uniqueid}_{json_field}"
-        http_client.register(json_field, self.handle_update)
 
-    def handle_update(self, value):
-        # print ("FreeDS sensor handling update from http client")
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+
+        if (not self.json_field in self.coordinator.data.keys()):
+            return
+
+        value = self.coordinator.data[self.json_field]
+
         if (self.device_class == SensorDeviceClass.TEMPERATURE and value == "-127.0"):
-            self.last_known_value = None
+            self._state = None
         else:
-            self.last_known_value = value
+            self._state = value
 
         self.async_write_ha_state()
 
-    def available(self) -> bool:
-        """Return True if FreeDS is available."""
-        return self.last_known_value is not None
-
     @property
     def state(self):
-        return self.last_known_value
+        return self._state
 
     @property
     def device_info(self):
@@ -276,4 +287,3 @@ class FreeDSSensor(SensorEntity):
     def name(self): return self._name
     @property
     def unique_id(self): return self._id
-

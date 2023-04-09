@@ -5,6 +5,7 @@ from homeassistant.core import HomeAssistant
 
 from . import sensor
 from .const import DOMAIN
+from .coordinator import FreeDSCoordinator
 
 PLATFORMS: list[str] = ["sensor"]
 
@@ -13,10 +14,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     print ("freeds setup", entry.data)
 
-    # entry.data["custom"] = "custom123";
-    # hass.data.setdefault(DOMAIN, {})[entry.entry_id] = sensor.BatterySensor(hass, entry.data["host"])
+    uniqueid = entry.data['uniqueid']
 
-    # hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    coordinator = FreeDSCoordinator(hass, entry.data['host'], name = f'FreeDS {uniqueid}')
+
+    # Stores a ref to the coordinator in the HASS data. This will be fetched
+    # by the different domains (sensors, buttons, binary sensors)
+    hass.data.setdefault(DOMAIN, {})[entry.data['uniqueid']] = coordinator
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
