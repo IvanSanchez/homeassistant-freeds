@@ -21,6 +21,10 @@ _LOGGER = logging.getLogger(__name__)
 
 timeout = aiohttp.ClientTimeout(total=None, sock_read=3)
 
+
+http_port = 80
+# http_port = 3333
+
 class FreeDSCoordinator(DataUpdateCoordinator):
     """FreeDS coordinator."""
 
@@ -46,6 +50,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         self.host = host
         self.name = name
         self.data = {}
+        self.session = aiohttp.ClientSession(timeout=timeout)
 
     @callback
     def async_add_listener( self, update_callback, context):
@@ -62,13 +67,10 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         """Main loop: creates HTTP connection and fetches data"""
 
         for _ in iter(int, 1):
-            if (self.session is None):
-                self.session = aiohttp.ClientSession(timeout=timeout)
-
             try:
-                self.resp = await self.session.get(f'http://{self.host}/events')
+                self.resp = await self.session.get(f'http://{self.host}:{http_port}/events')
                 # print(f'http://{self.host}/events', self.resp.status)
-                self.logger.info(f'Status response from http://{self.host}/events is {self.resp.status}')
+                self.logger.info(f'Status response from http://{self.host}:{http_port}/events is {self.resp.status}')
             except Exception as err:
                 self.async_set_update_error(sys.exception())
                 # _LOGGER.exception(sys.exception())
@@ -115,3 +117,15 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
         self.logger.info(f'HTTP request loop stopped for {self.name} (no entities)')
         self.running = False
+
+    async def async_send_toggle_button(self, button_idx):
+        print(f"Sending HTTP POST to toggle button {button_idx}")
+        # self.logger.debug(f"Sending HTTP POST to toggle button {button_idx}")
+
+        post_response = await self.session.post(
+            f'http://{self.host}:{http_port}/togglebuttons',
+            data={"data": button_idx})
+
+        print (post_response.status)
+        print (await post_response.text() )
+
