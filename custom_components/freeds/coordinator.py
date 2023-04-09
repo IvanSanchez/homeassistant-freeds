@@ -66,9 +66,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 self.session = aiohttp.ClientSession(timeout=timeout)
 
             try:
-                self.resp = await self.session.get(f'http://{self.host}:3333/events')
+                self.resp = await self.session.get(f'http://{self.host}/events')
                 # print(f'http://{self.host}/events', self.resp.status)
-                self.logger.info(f'Status response from http://{self.host}:3333/events is {self.resp.status}')
+                self.logger.info(f'Status response from http://{self.host}/events is {self.resp.status}')
             except Exception as err:
                 self.async_set_update_error(sys.exception())
                 # _LOGGER.exception(sys.exception())
