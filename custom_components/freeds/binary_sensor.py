@@ -43,7 +43,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         FreeDSBinarySensor(
             label="Error",
             dev_class=BinarySensorDeviceClass.PROBLEM,
-            icon="mdi:connection",
+            icon="mdi:alert",
             entity_category=EntityCategory.DIAGNOSTIC,
             json_field="error",
             uniqueid=uniqueid,
