@@ -83,19 +83,30 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ### TODO: Implement a more robust method of fetching information for
         ### any newer firmware versions
 
+        _LOGGER.info(f"Checking for the FreeDS version by scraping at http://{host}:{port}/ (method for FreeDS 1.0.x)")
+
         try:
             html = await (await session.get(f'http://{host}:{port}/')).text()
 
+            _LOGGER.info(f"Successfully loaded http://{host}:{port}/ .")
+
             # Sanity check
             title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
+
+            _LOGGER.info(f'Found "FreeDS - Derivador de energía solar excedente" in http://{host}:{port}/ .')
 
             # Scrape firmware version from page footer
             fwversion = re.search('<div>Copyright © 2020. Derivador de energía solar excedente (.*)</div>', html).groups()[0]
 
+            _LOGGER.info(f"Scrapped firmware version: {fwversion}")
+
+            _LOGGER.info(f"Checking for the FreeDS hostname & unique ID by scraping at http://{host}:{port}/ (method for FreeDS 1.0.x)")
             html = await (await session.get(f'http://{host}:{port}/Red.html')).text()
 
             # Sanity check
             title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
+
+            _LOGGER.info(f'Found "FreeDS - Derivador de energía solar excedente" in http://{host}:{port}/Red.html .')
 
             # Scrape hostname (which, by default, contains the 4-hexdigit unique ID)
             # from the network configuration webpage
@@ -103,14 +114,18 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             uniqueid = hostname[-4:]
 
-            session.close()
+            _LOGGER.info(f"Scrapped hostname: {hostname} with unique ID {uniqueid}. All scrapping successful.")
+
+            await session.close()
             return {
                 "uniqueid": uniqueid,
                 "fwversion": fwversion,
             }
 
         except Exception as err:
-            session.close()
+            _LOGGER.warning(f"Scraping failed. Check that your FreeDS is at the address given.")
+
+            await session.close()
 
             # raise Exception("invalid_host")
             # _LOGGER.error(Exception(err))
