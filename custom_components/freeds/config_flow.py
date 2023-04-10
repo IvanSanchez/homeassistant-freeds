@@ -83,7 +83,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ### TODO: Implement a more robust method of fetching information for
         ### any newer firmware versions
 
-        _LOGGER.info(f"Checking for the FreeDS version by scraping at http://{host}:{port}/ (method for FreeDS 1.0.x)")
+        _LOGGER.info(f"Checking for the FreeDS version by scraping http://{host}:{port}/ (method for FreeDS 1.0.x)")
 
         try:
             html = await (await session.get(f'http://{host}:{port}/')).text()
@@ -100,7 +100,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             _LOGGER.info(f"Scrapped firmware version: {fwversion}")
 
-            _LOGGER.info(f"Checking for the FreeDS hostname & unique ID by scraping at http://{host}:{port}/ (method for FreeDS 1.0.x)")
+            _LOGGER.info(f"Checking for the FreeDS hostname & unique ID by scraping  http://{host}:{port}/Red.html (method for FreeDS 1.0.x)")
             html = await (await session.get(f'http://{host}:{port}/Red.html')).text()
 
             # Sanity check
