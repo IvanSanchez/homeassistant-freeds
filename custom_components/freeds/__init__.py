@@ -14,8 +14,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     uniqueid = entry.data['uniqueid']
     host = entry.data['host']
+    port = entry.data['port']
 
-    coordinator = FreeDSCoordinator(hass, host, name = f'FreeDS {uniqueid} HTTP client')
+    coordinator = FreeDSCoordinator(hass, host, port = 80, name = f'FreeDS {uniqueid} HTTP client')
 
     # Stores a ref to the coordinator & device info in the HASS data. This will
     # be fetched by the different domains (sensors, buttons, binary sensors)

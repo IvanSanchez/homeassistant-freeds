@@ -1,6 +1,6 @@
 from homeassistant import config_entries
 from .const import DOMAIN
-from homeassistant.const import CONF_HOST
+from homeassistant.const import (CONF_HOST, CONF_PORT)
 import voluptuous as vol
 import logging
 from typing import Any, Final
@@ -13,14 +13,10 @@ import re
 _LOGGER = logging.getLogger(__name__)
 
 
-### TODO: Add HTTP timeout (for the persistent HTTP connection to the FreeDS device)
-### Right now a value of 30 seconds is hardcoded.
-HOST_SCHEMA: Final = vol.Schema({vol.Required(CONF_HOST): str})
-# HOST_SCHEMA = vol.Schema({("host"): str})
-
-
-http_port = 80
-# http_port = 3333
+HOST_SCHEMA: Final = vol.Schema({
+    vol.Required(CONF_HOST): str,
+    vol.Required(CONF_PORT, default=80): int
+})
 
 
 class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -45,9 +41,11 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             # host: str = user_input[CONF_HOST]
-            host: str = user_input["host"]
+            host: str = user_input[CONF_HOST]
+            port: str = user_input[CONF_PORT]
+
             try:
-                info = await self._async_get_info(host)
+                info = await self._async_get_info(host, port)
 
                 if (info['uniqueid'] is None):
                     errors["base"] = "invalid_host"
@@ -56,7 +54,8 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
-                        "host": user_input["host"],
+                        "host": user_input[CONF_HOST],
+                        "port": user_input[CONF_PORT],
                         "uniqueid": info['uniqueid'],
                         "fwversion": info['fwversion']
                     })
@@ -74,7 +73,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-    async def _async_get_info(self, host):
+    async def _async_get_info(self, host, port = 80):
 
         session = aiohttp.ClientSession()
 
@@ -85,7 +84,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ### any newer firmware versions
 
         try:
-            html = await (await session.get(f'http://{host}:{http_port}/')).text()
+            html = await (await session.get(f'http://{host}:{port}/')).text()
 
             # Sanity check
             title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
@@ -93,7 +92,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Scrape firmware version from page footer
             fwversion = re.search('<div>Copyright © 2020. Derivador de energía solar excedente (.*)</div>', html).groups()[0]
 
-            html = await (await session.get(f'http://{host}:{http_port}/Red.html')).text()
+            html = await (await session.get(f'http://{host}:{port}/Red.html')).text()
 
             # Sanity check
             title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()

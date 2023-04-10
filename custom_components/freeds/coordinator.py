@@ -21,9 +21,6 @@ _LOGGER = logging.getLogger(__name__)
 
 timeout = aiohttp.ClientTimeout(total=None, sock_read=3)
 
-# http_port = 80
-http_port = 3333
-
 class FreeDSCoordinator(DataUpdateCoordinator):
     """FreeDS coordinator."""
 
@@ -43,10 +40,11 @@ class FreeDSCoordinator(DataUpdateCoordinator):
     retries = 1
     running = False
 
-    def __init__(self, hass, host, name = "FreeDS"):
+    def __init__(self, hass, host, port = 80, name = "FreeDS"):
         """Initialize coordinator."""
         super().__init__( hass, _LOGGER, name = name)
         self.host = host
+        self.port = port
         self.name = name
         self.data = {}
         self.session = aiohttp.ClientSession(timeout=timeout)
@@ -68,9 +66,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
         for _ in iter(int, 1):
             try:
-                self.resp = await self.session.get(f'http://{self.host}:{http_port}/events')
+                self.resp = await self.session.get(f'http://{self.host}:{self.port}/events')
                 # print(f'http://{self.host}/events', self.resp.status)
-                self.logger.info(f'Status response from http://{self.host}:{http_port}/events is {self.resp.status}')
+                self.logger.info(f'Status response from http://{self.host}:{self.port}/events is {self.resp.status}')
             except Exception as err:
                 # print("error connecting", err)
                 # self.async_set_update_error(Exception(err))
@@ -120,7 +118,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
             await asyncio.sleep(10 * self.retries)
             self.retries += 1
-            self.logger.info(f"{self.name} ({self.host}) reconnecting...")
+            self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting...")
 
         self.logger.info(f'HTTP request loop stopped for {self.name} (no entities)')
         self.running = False

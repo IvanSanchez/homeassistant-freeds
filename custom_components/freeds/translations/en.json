@@ -14,6 +14,7 @@
                 "description": "Make sure your FreeDS is on, and that it has a stable IP address.",
                 "data": {
                     "host": "IP address or hostname",
+                    "port": "HTTP port",
                     "password": "[%key:common::config_flow::data::password%]",
                     "username": "[%key:common::config_flow::data::username%]"
                 }
