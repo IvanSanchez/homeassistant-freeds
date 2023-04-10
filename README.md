@@ -2,6 +2,8 @@
 
 `homeassistant-freeds` is a [Home Assistant](https://www.home-assistant.io) integration for [FreeDS](https://freeds.es/) devices (power surplus management devices).
 
+This repository also contains a [custom dashboard card](https://developers.home-assistant.io/docs/frontend/custom-ui/custom-card/) for home assistant - a "power flow" graph similar to the one found in FreeDS.
+
 ## Installation
 
 #### Guided installation
