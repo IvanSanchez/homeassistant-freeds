@@ -16,6 +16,7 @@ from homeassistant.const import (
     UnitOfEnergy,
     UnitOfTemperature,
     UnitOfElectricPotential,
+    UnitOfElectricCurrent,
     UnitOfFrequency,
     PERCENTAGE
 )
@@ -61,6 +62,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             **common_data
         ),
         FreeDSSensor(
+            name="Battery Power",
+            unit=UnitOfPower.WATT,
+            device_class=SensorDeviceClass.POWER,
+            icon="mdi:battery-charging",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="wbattery",
+            **common_data
+        ),
+        FreeDSSensor(
             name="Surplus Load",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -70,6 +81,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="loadCalcWatts",
             **common_data
         ),
+
         FreeDSSensor(
             name="PWM frequency",
             unit=UnitOfFrequency.HERTZ,
@@ -89,6 +101,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pwm",
             **common_data
         ),
+
         FreeDSTemperatureSensor(
             name="Heater Temperature",
             unit=UnitOfTemperature.CELSIUS,
@@ -105,8 +118,18 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             device_class=SensorDeviceClass.TEMPERATURE,
             # icon="mdi:thermometer",
             state_class=SensorStateClass.MEASUREMENT,
-            # entity_category=EntityCategory.DIAGNOSTIC,
+            entity_category=EntityCategory.DIAGNOSTIC,
             json_field="tempTriac",
+            **common_data
+        ),
+        FreeDSTemperatureSensor(
+            name="Inverter Temperature",
+            unit=UnitOfTemperature.CELSIUS,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            # icon="mdi:thermometer",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="invTemp",
             **common_data
         ),
         FreeDSTemperatureSensor(
@@ -119,6 +142,79 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="tempCustom",
             **common_data
         ),
+
+        FreeDSSensor(
+            name="Inverter state of charge",
+            unit=PERCENTAGE,
+            device_class=SensorDeviceClass.BATTERY,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="invSoC",
+            **common_data
+        ),
+
+        FreeDSSensor(
+            name="Inverter Line 1 Voltage",
+            unit=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.VOLTAGE,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pv1v",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Inverter Line 1 Current",
+            unit=UnitOfElectricCurrent.AMPERE,
+            device_class=SensorDeviceClass.CURRENT,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pv1c",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Inverter Line 1 Power",
+            unit=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.POWER,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pw1",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Inverter Line 2 Voltage",
+            unit=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.VOLTAGE,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pv2v",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Inverter Line 2 Current",
+            unit=UnitOfElectricCurrent.AMPERE,
+            device_class=SensorDeviceClass.CURRENT,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pv2c",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Inverter Line 2 Power",
+            unit=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.POWER,
+            # icon="mdi:resistor",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="pw2",
+            **common_data
+        ),
+
         FreeDSSensor(
             name="Surplus Energy (Today)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
@@ -179,8 +275,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwExportTotal",
             **common_data
         ),
+
         FreeDSSensor(
-            name="Voltage",
+            name="AC Voltage",
             unit=UnitOfElectricPotential.VOLT,
             device_class=SensorDeviceClass.VOLTAGE,
             # icon="mdi:sine-wave",
@@ -189,6 +286,37 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="mvoltage",
             **common_data
         ),
+        FreeDSSensor(
+            name="AC Current",
+            unit=UnitOfElectricCurrent.AMPERE,
+            device_class=SensorDeviceClass.CURRENT,
+            # icon="mdi:sine-wave",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="mcurrent",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="AC Frequency",
+            unit=UnitOfFrequency.HERTZ,
+            device_class=SensorDeviceClass.FREQUENCY,
+            # icon="mdi:sine-wave",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="mfrequency",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Power Factor",
+            unit=PERCENTAGE,
+            device_class=SensorDeviceClass.POWER_FACTOR,
+            # icon="mdi:sine-wave",
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_field="mpowerfactor",
+            **common_data
+        ),
+
         FreeDSWorkingModeSensor(
             name="Working Mode",
             unit=None,
@@ -221,6 +349,9 @@ class FreeDSSensor(FreeDSEntity, SensorEntity):
         self._attr_native_value = None
         self._attr_native_unit_of_measurement = unit
 
+        # All sensors should start as unavailable. Some of them will never be,
+        # depending on the FreeDS Working Mode.
+        self._attr_available = False
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
