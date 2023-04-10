@@ -28,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "configuration_url": f'http://{host}',
             "config_entries": [entry],
             # "default_manufacturer": "FreeDS"
+            "sw_version": entry.data['fwversion']
         }
     }
 

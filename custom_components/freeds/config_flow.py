@@ -6,6 +6,8 @@ import logging
 from typing import Any, Final
 from homeassistant.data_entry_flow import FlowResult
 from getmac import get_mac_address
+import aiohttp
+import re
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,6 +18,9 @@ _LOGGER = logging.getLogger(__name__)
 HOST_SCHEMA: Final = vol.Schema({vol.Required(CONF_HOST): str})
 # HOST_SCHEMA = vol.Schema({("host"): str})
 
+
+http_port = 80
+# http_port = 3333
 
 
 class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -42,10 +47,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # host: str = user_input[CONF_HOST]
             host: str = user_input["host"]
             try:
-                ### FIXME!!! Grab the unique ID from the FreeDS device, somehow
-                info = self._async_get_info(host)
-
-                # print (info)
+                info = await self._async_get_info(host)
 
                 if (info['uniqueid'] is None):
                     errors["base"] = "invalid_host"
@@ -72,28 +74,49 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-    def _async_get_info(self, host):
+    async def _async_get_info(self, host):
 
-        # Fetch the host's MAC address.
-        # HASS config allows for a generic hostname/ip/FQDN input, but
-        # the `getmac` package works with either IP or hostname, explicitly.
-        # This looks for the MAC daisy-chaining getmac methods.
-        mac = get_mac_address(ip=host)
-        if (mac is None):
-            mac = get_mac_address(hostname=host)
-            if (mac is None):
-                mac = get_mac_address(ip6=host)
+        session = aiohttp.ClientSession()
 
-        uniqueid = None
-        if (mac is not None):
-            # ID is the two last bytes of the MAC; one goes from characters 12 to 14,
-            # the other from 15 to 17
-            uniqueid = mac[12:14] + mac[15:17]
+        # For FreeDS version 1.0.x, try fetching /index.html and scrapping
+        # some text strings.
 
-        ### FIXME: Fetch the firmware version and compilation date
+        ### TODO: Implement a more robust method of fetching information for
+        ### any newer firmware versions
 
-        return {
-            'uniqueid': uniqueid,
-            'fwversion': None
-        }
+        try:
+            html = await (await session.get(f'http://{host}:{http_port}/')).text()
+
+            # Sanity check
+            title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
+
+            # Scrape firmware version from page footer
+            fwversion = re.search('<div>Copyright © 2020. Derivador de energía solar excedente (.*)</div>', html).groups()[0]
+
+            html = await (await session.get(f'http://{host}:{http_port}/Red.html')).text()
+
+            # Sanity check
+            title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
+
+            # Scrape hostname (which, by default, contains the 4-hexdigit unique ID)
+            # from the network configuration webpage
+            hostname = re.search('<label class="col-sm-4 form-control-label language" key="HOSTNAME"></label>\s+<div class="col-sm-8 mg-t-10 mg-sm-t-0">\s+                                                            <input id=\'host\' name="host" type="text" maxlength="11" class="form-control" value="(.*)">\s+</div>', html).groups()[0]
+
+            uniqueid = hostname[-4:]
+
+            session.close()
+            return {
+                "uniqueid": uniqueid,
+                "fwversion": fwversion,
+            }
+
+        except Exception as err:
+            session.close()
+
+            # raise Exception("invalid_host")
+            # _LOGGER.error(Exception(err))
+
+            return {
+                "uniqueid": None
+            }
 
