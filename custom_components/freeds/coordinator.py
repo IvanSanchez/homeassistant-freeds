@@ -40,7 +40,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
     retries = 1
     running = False
 
-    def __init__(self, hass, host, port = 80, name = "FreeDS"):
+    def __init__(self, hass, host, port = 80, user = None, passwd = None, name = "FreeDS"):
         """Initialize coordinator."""
         super().__init__( hass, _LOGGER, name = name)
         self.host = host
@@ -49,6 +49,11 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         self.data = {}
         self.session = aiohttp.ClientSession(timeout=timeout)
         self.last_http_error = None
+
+        if (user is None):
+            self.auth = None
+        else:
+            self.auth = aiohttp.BasicAuth(user, passwd)
 
     @callback
     def async_add_listener( self, update_callback, context):
@@ -66,7 +71,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
         for _ in iter(int, 1):
             try:
-                self.resp = await self.session.get(f'http://{self.host}:{self.port}/events')
+                self.resp = await self.session.get(f'http://{self.host}:{self.port}/events', auth=self.auth)
                 # print(f'http://{self.host}/events', self.resp.status)
                 self.logger.info(f'Status response from http://{self.host}:{self.port}/events is {self.resp.status}')
             except Exception as err:

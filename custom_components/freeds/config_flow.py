@@ -1,6 +1,6 @@
 from homeassistant import config_entries
 from .const import DOMAIN
-from homeassistant.const import (CONF_HOST, CONF_PORT)
+from homeassistant.const import (CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD)
 import voluptuous as vol
 import logging
 from typing import Any, Final
@@ -16,6 +16,12 @@ _LOGGER = logging.getLogger(__name__)
 HOST_SCHEMA: Final = vol.Schema({
     vol.Required(CONF_HOST): str,
     vol.Required(CONF_PORT, default=80): int
+})
+FULL_SCHEMA: Final = vol.Schema({
+    vol.Required(CONF_HOST): str,
+    vol.Required(CONF_PORT, default=80): int,
+    vol.Required(CONF_USERNAME): str,
+    vol.Required(CONF_PASSWORD): str,
 })
 
 
@@ -43,12 +49,24 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # host: str = user_input[CONF_HOST]
             host: str = user_input[CONF_HOST]
             port: str = user_input[CONF_PORT]
+            user = user_input.get(CONF_USERNAME)
+            passwd = user_input.get(CONF_PASSWORD)
 
             try:
-                info = await self._async_get_info(host, port)
+                info = await self._async_get_info(host, port, user, passwd)
+
+                if (info.get('error') == 'invalid_auth'):
+                    return self.async_show_form(
+                        step_id="user", data_schema=vol.Schema({
+                            vol.Required(CONF_HOST, default=host): str,
+                            vol.Required(CONF_PORT, default=port): int,
+                            vol.Required(CONF_USERNAME, default=user): str,
+                            vol.Required(CONF_PASSWORD, default=passwd): str,
+                        }), errors={"base": "invalid_auth"}
+                    )
 
                 if (info['uniqueid'] is None):
-                    errors["base"] = "invalid_host"
+                    errors["base"] = info['error']
                 else:
                     await self.async_set_unique_id(info['uniqueid'])
                     self._abort_if_unique_id_configured()
@@ -56,6 +74,8 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
                         "host": user_input[CONF_HOST],
                         "port": user_input[CONF_PORT],
+                        "username": user_input[CONF_USERNAME],
+                        "password": user_input[CONF_PASSWORD],
                         "uniqueid": info['uniqueid'],
                         "fwversion": info['fwversion']
                     })
@@ -73,9 +93,13 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-    async def _async_get_info(self, host, port = 80):
+    async def _async_get_info(self, host, port = 80, user = None, passwd = None):
 
         session = aiohttp.ClientSession()
+
+        auth = None
+        if (user is not None):
+            auth = aiohttp.BasicAuth(user, passwd)
 
         # For FreeDS version 1.0.x, try fetching /index.html and scrapping
         # some text strings.
@@ -86,7 +110,13 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.info(f"Checking for the FreeDS version by scraping http://{host}:{port}/ (method for FreeDS 1.0.x)")
 
         try:
-            html = await (await session.get(f'http://{host}:{port}/')).text()
+            resp = await session.get(f'http://{host}:{port}/', auth=auth)
+            _LOGGER.info(f'Status response from http://{host}:{port}/ is {resp.status}')
+
+            if (resp.status == 401):
+                return { 'error': 'invalid_auth' }
+
+            html = await resp.text()
 
             _LOGGER.info(f"Successfully loaded http://{host}:{port}/ .")
 
@@ -101,7 +131,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.info(f"Scrapped firmware version: {fwversion}")
 
             _LOGGER.info(f"Checking for the FreeDS hostname & unique ID by scraping  http://{host}:{port}/Red.html (method for FreeDS 1.0.x)")
-            html = await (await session.get(f'http://{host}:{port}/Red.html')).text()
+            html = await (await session.get(f'http://{host}:{port}/Red.html', auth=auth)).text()
 
             # Sanity check
             title = re.search('<meta name="description" content="FreeDS - Derivador de energía solar excedente">', html).span()
@@ -123,7 +153,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
 
         except Exception as err:
-            _LOGGER.warning(f"Scraping failed. Check that your FreeDS is at the address given.")
+            _LOGGER.warning(f"Scraping failed ({err}). Check that your FreeDS is at the address given.")
 
             await session.close()
 
@@ -131,6 +161,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # _LOGGER.error(Exception(err))
 
             return {
-                "uniqueid": None
+                "uniqueid": None,
+                "error": "invalid_host"
             }
 
