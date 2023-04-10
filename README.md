@@ -43,6 +43,15 @@ Use the gitlab issue tracker at https://gitlab.com/IvanSanchez/homeassistant-fre
 
 Please keep in mind that it's an issue tracker, and not a discussion forum. I recommend reading ["How to Report Bugs Effectively"](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html) if you've never written into an issue tracker before.
 
+Please provide any Home Assistant logs. It's a good idea to increase the verbosity of the logs for the `freeds` integration by adding this to yout `configuration.yml` file (as explained at https://www.home-assistant.io/integrations/logger/ ):
+
+```yaml
+logger:
+  default: warning
+  logs:
+    custom_components.freeds: info
+```
+
 ## License
 
 Licensed under GPLv3. See the `LICENSE` file for details.
