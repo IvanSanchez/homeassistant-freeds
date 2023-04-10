@@ -21,22 +21,21 @@ _LOGGER = logging.getLogger(__name__)
 
 timeout = aiohttp.ClientTimeout(total=None, sock_read=3)
 
-
-http_port = 80
-# http_port = 3333
+# http_port = 80
+http_port = 3333
 
 class FreeDSCoordinator(DataUpdateCoordinator):
     """FreeDS coordinator."""
 
     # This coordinator works as a weird HTTP client.
-    # The way FreeDS provides updates via the /events endpoint
-    # is *kinda* like multipart HTTP content (RFC 1341, section 7.2).
+    # The way FreeDS provides updates via the /events endpoint.
+    # It follows the EventSource spec,
+    # see http://developer.mozilla.org/en-US/docs/Web/API/EventSource.html
+    #
+    # That's *kinda* like multipart HTTP content (RFC 1341, section 7.2).
     # Like multipart content, each chunk can be read with a single socket
     # read operation (or a resp.content.read() in python's aiohttp). Unlike
-    # proper multipart content, there is no explicit data boundary, so
-    # reliability of the protocol can be somewhat flaky.
-    #
-    # (see https://www.w3.org/Protocols/rfc1341/7_2_Multipart.html).
+    # proper multipart content, there is no explicit data boundary.
 
     session = None
     resp = None
@@ -74,9 +73,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 self.logger.info(f'Status response from http://{self.host}:{http_port}/events is {self.resp.status}')
             except Exception as err:
                 # print("error connecting", err)
-                # self.async_set_update_error(sys.exception())
                 # self.async_set_update_error(Exception(err))
-                # _LOGGER.exception(sys.exception())
                 self.last_http_error = err
 
             if (self.resp):
@@ -85,13 +82,10 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                         break;
 
                     try:
-                        msg = await (self.resp.content.read(2048))
-                        # print (msg)
+                        assert (not self.resp.content.at_eof())
+                        msg = await (self.resp.content.readany())
                     except Exception as err:
-                        # _LOGGER.error(f"{self.host} HTTP timeout")
-                        # _LOGGER.error(err)
                         # print("error reading", err)
-                        # self.async_set_update_error(sys.exception())
                         # self.async_set_update_error(Exception(err))
                         self.last_http_error = err
 
