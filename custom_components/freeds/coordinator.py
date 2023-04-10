@@ -51,6 +51,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         self.name = name
         self.data = {}
         self.session = aiohttp.ClientSession(timeout=timeout)
+        self.last_http_error = None
 
     @callback
     def async_add_listener( self, update_callback, context):
@@ -74,8 +75,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             except Exception as err:
                 # print("error connecting", err)
                 # self.async_set_update_error(sys.exception())
-                self.async_set_update_error(Exception(err))
+                # self.async_set_update_error(Exception(err))
                 # _LOGGER.exception(sys.exception())
+                self.last_http_error = err
 
             if (self.resp):
                 for _ in iter(int, 1):
@@ -90,7 +92,9 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                         # _LOGGER.error(err)
                         # print("error reading", err)
                         # self.async_set_update_error(sys.exception())
-                        self.async_set_update_error(Exception(err))
+                        # self.async_set_update_error(Exception(err))
+                        self.last_http_error = err
+
                         break;
                     else:
                         self.retries = 1
@@ -115,12 +119,10 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             if (not self._listeners):
                 break;
 
-            if (self.retries == 2):
+            if (self.retries > 1):
                 # Marks entities as "not available" at the *second* consecutive
                 # error
-                self.data = None
-                self.last_update_success = False
-                self.async_update_listeners()
+                self.async_set_update_error(Exception(self.last_http_error))
 
             await asyncio.sleep(10 * self.retries)
             self.retries += 1

@@ -29,104 +29,66 @@ from homeassistant.const import (
 import random
 
 from .const import DOMAIN
+from .entity import FreeDSEntity
 
 import traceback
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add switches for passed config_entry in HA."""
 
-    coordinator = hass.data[DOMAIN][config_entry.data['uniqueid']]
-
-    uniqueid = config_entry.data["uniqueid"]
+    # Fetch coordinator and device_info, needs to be passed to each and
+    # every constructor.
+    # "data" is a dict like {coordinator, device_info, freeds_id}
+    common_data = hass.data[DOMAIN][config_entry.data['uniqueid']]
 
     switches = [
         FreeDSSwitch(
-            label="PWM Enabled",
-            dev_class=SwitchDeviceClass.SWITCH,
+            name="PWM Enabled",
+            device_class=SwitchDeviceClass.SWITCH,
             icon="mdi:square-wave",
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="POn",
             button_idx = 6,
-            uniqueid=uniqueid,
-            coordinator=coordinator
+            **common_data
         ),
         FreeDSSwitch(
-            label="PWM Manual Mode",
-            dev_class=SwitchDeviceClass.SWITCH,
+            name="PWM Manual Mode",
+            device_class=SwitchDeviceClass.SWITCH,
             icon="mdi:square-wave",
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_field="PwmMan",
             button_idx = 7,
-            uniqueid=uniqueid,
-            coordinator=coordinator
+            **common_data
         ),
     ]
 
     async_add_entities(switches)
 
 
-class FreeDSSwitch(CoordinatorEntity, SwitchEntity):
+class FreeDSSwitch(FreeDSEntity, SwitchEntity):
     """An individual FreeDSSwitch entry, used for relays and enabling PWM."""
 
-    def __init__ (self,
-                  label,
-                  icon,
-                  json_field,
-                  uniqueid,
-                  coordinator,
-                  button_idx,
-                  dev_class = None,
-                  entity_category = None):
+    def __init__ (self, button_idx = None, **kwargs):
 
-        """Pass coordinator to CoordinatorEntity."""
-        super().__init__(coordinator, context=json_field)
+        # Init FreeDSEntity
+        super().__init__(**kwargs)
 
-        # Instance attributes built into Entity:
-        self._attr_icon = icon
-        self._attr_entity_category = entity_category
-        self._attr_name = f"FreeDS {uniqueid} {label}"
-        self._attr_unique_id = f"{uniqueid}_{json_field}"
-        self._attr_device_class = dev_class
-        self._attr_available = False
+        # Instance attributes built into SwitchEntity
+        self._attr_is_on = None
 
-        # Instance attributes built into Switch:
-
-        self.freeds_unique_id = uniqueid
-        self.json_field = json_field
         self._button_idx = button_idx
-
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
-        if (self.coordinator.data is None):
-            # This means the coordinator couldn't fetch any data at all,
-            # i.e. an error
-            if (self._attr_available):
-                self._attr_available = False
-                self.async_write_ha_state()
+        value = super()._handle_coordinator_update()
 
-        elif (not self.json_field in self.coordinator.data.keys()):
-            # Last coordinator update didn't include data for this entity
-            pass
-        else:
-            value = self.coordinator.data[self.json_field]
+        if (value is not None):
+            value = bool(int(value))
             if (not self._attr_available or value != self._attr_is_on):
                 self._attr_available = True
                 self._attr_is_on = value
                 self.async_write_ha_state()
-
-
-    @property
-    def device_info(self):
-        """Return information to link this entity with the correct device."""
-        return {
-            "identifiers": { (DOMAIN, self.freeds_unique_id) },
-            "name": f"FreeDS {self.freeds_unique_id}",
-            # "sw_version": None,
-            # "model": None,
-            # "manufacturer": None,
-        }
 
     async def async_turn_on(self):
         if self.is_on:

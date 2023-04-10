@@ -12,15 +12,24 @@ PLATFORMS: list[str] = ["sensor", "binary_sensor","switch"]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a FreeDS sensor from a config entry."""
 
-    # print ("freeds setup", entry.data)
-
     uniqueid = entry.data['uniqueid']
+    host = entry.data['host']
 
-    coordinator = FreeDSCoordinator(hass, entry.data['host'], name = f'FreeDS {uniqueid}')
+    coordinator = FreeDSCoordinator(hass, host, name = f'FreeDS {uniqueid} HTTP client')
 
-    # Stores a ref to the coordinator in the HASS data. This will be fetched
-    # by the different domains (sensors, buttons, binary sensors)
-    hass.data.setdefault(DOMAIN, {})[entry.data['uniqueid']] = coordinator
+    # Stores a ref to the coordinator & device info in the HASS data. This will
+    # be fetched by the different domains (sensors, buttons, binary sensors)
+    hass.data.setdefault(DOMAIN, {})[entry.data['uniqueid']] = {
+        "freeds_id": uniqueid,
+        "coordinator": coordinator,
+        "device_info": {
+            "identifiers": { (DOMAIN, uniqueid) },
+            "name": f"FreeDS {uniqueid}",
+            "configuration_url": f'http://{host}',
+            "config_entries": [entry],
+            # "default_manufacturer": "FreeDS"
+        }
+    }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
