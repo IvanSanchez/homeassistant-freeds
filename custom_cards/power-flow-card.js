@@ -61,7 +61,7 @@ class PowerFlowCard extends HTMLElement {
 	// Whenever the state changes, a new `hass` object is set. Use this to
 	// update your content.
 	set hass(hass) {
-console.log(hass);
+
 		for (const [entity, node] of Object.entries(this.#nodes)) {
 			node.state = hass.states[entity];
 		}
@@ -124,22 +124,37 @@ console.log(hass);
 	}
 
 	connectedCallback(){
+		// console.log('power flow connected to document. config: ', this.#config);
+		this.#nodes = [];
+		this.#positives = [];
+		this.#negatives = [];
+
+		const itemsWide = Math.max(this.#config.sources.length,
+								   (this.#config.sinks?.length ?? 0) + 1);
+
+		const pxWide = 84 * itemsWide + 220;
+
 		this.innerHTML = `
 			<ha-card header="Power Flow">
-			<div id="power-sources" style='text-align: center'></div>
-			<div id="power-center" style='height:80px; width: 100%'>
-				<div id="power-left-exchanger" style='position:absolute; left:0;'></div>
-				<div id="power-hub" style='background: #ccc; position:absolute; left:114px; right: 114px; height: 80px;'></div>
-				<div id="power-right-exchanger" style='position:absolute; right:0;'></div>
+			<div style='margin: 0 auto 10px auto; width: ${pxWide}px'>
+				<div id="power-sources" style='text-align: center'></div>
+				<div id="power-center" style='height:80px; width: ${pxWide}px; position:relative;'>
+					<div id="power-left-exchanger" style='position:absolute; left:0;'></div>
+					<div id="power-hub" style='
+						background: var(--lovelace-background, #fafafa);
+						position:absolute;
+						left:111px; right: 111px; height: 80px;
+						border-color: var(--ha-card-border-color, #e0e0e0);
+						border-radius: var(--ha-card-border-radius, 12px);
+						border-width: var(--ha-card-border-width, 1px);
+						border-style: solid;
+						'></div>
+					<div id="power-right-exchanger" style='position:absolute; right:0;'></div>
+				</div>
+				<div id="power-sinks" style='text-align: center'></div>
 			</div>
-			<div id="power-sinks" style='text-align: center'></div>
 			</ha-card>
 		`;
-
-		// this.#srcs = config.sources;
-		// this.#snks = config.sinks ?? [];
-		// this.#left = config.left_exchanger;
-		// this.#right = config.right_exchanger;
 
 		const srcCnt = this.querySelector("#power-sources");
 		const snkCnt = this.querySelector("#power-sinks");
@@ -297,7 +312,7 @@ class PowerFlowNode extends HTMLElement {
 			this.#text.style.width = '80px';
 			this.#text.style.left= '0';
 			this.#arrow.style.transform= "rotate(90deg)";
-			this.#arrow.style.right= "-57px";
+			this.#arrow.style.right= "-54px";
 			this.#arrow.style.top= "25px";
 		} else if (this.#role == RIGHT_EXCHANGE) {
 			this.appendChild(this.#icon = document.createElement('state-badge'));
@@ -306,7 +321,7 @@ class PowerFlowNode extends HTMLElement {
 			this.#text.style.position = 'absolute';
 			this.#text.style.width = '80px';
 			this.#text.style.right= '0';
-			this.#arrow.style.left= "-57px";
+			this.#arrow.style.left= "-54px";
 			this.#arrow.style.transform= "rotate(90deg)";
 			this.#arrow.style.top= "25px"
 		} else {
@@ -334,10 +349,12 @@ class PowerFlowNode extends HTMLElement {
 					this.#text.style.top = '8px';
 					this.#text.style.bottom = 'auto';
 					this.#arrow.style.transform= "rotate(-90deg)";
+					this.#arrow.style.top= "10px";
 				} else {
 					this.#text.style.top = 'auto';
 					this.#text.style.bottom = '8px';
 					this.#arrow.style.transform= "rotate(90deg)";
+					this.#arrow.style.top="40px";
 				}
 			}
 			else if (this.#role === RIGHT_EXCHANGE) {
@@ -345,11 +362,14 @@ class PowerFlowNode extends HTMLElement {
 					this.#text.style.top = '8px';
 					this.#text.style.bottom = 'auto';
 					this.#arrow.style.transform= "rotate(90deg)";
+					this.#arrow.style.top= "10px";
 				} else {
 					this.#text.style.top = 'auto';
 					this.#text.style.bottom = '8px';
 					this.#arrow.style.transform= "rotate(-90deg)";
-				}			}
+					this.#arrow.style.top="40px";
+				}
+			}
 		} else {
 			this.#text.innerText = 'N/A';
 		}
