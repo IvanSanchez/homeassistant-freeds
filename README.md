@@ -21,17 +21,15 @@ Download the files from this repository. Copy the `custom_components/freeds/` di
 
 e.g. if your configuration file is in `/home/homeassistant/.homeassistant/configuration.yaml`, then the files from this integration should be copied to `/home/homeassistant/.homeassistant/custom_components/freeds/`.
 
-The integration needs the [`getmac` pypi module](https://pypi.org/project/getmac/), so you'll probably need to install it within homeassistant's virtualenv. In other words:
-- Activate HASS virtualenv (likely running `cd /srv/homeassistant` then `source bin/activate`)
-- Install `getmac` (run `pip3 install getmac`)
-
 Restart Home Assistant to ensure the integration can be detected.
 
 ## Usage
 
 Use the Home Assistant GUI to add a new integration (settings → devices & services → add new integration). You should find the FreeDS integration in the list.
 
-Enter the IP address (or hostname) of your FreeDS device. Note that **no checks are made to ensure that there is a FreeDS device at that IP address**.
+Enter the IP address (or hostname) of your FreeDS device, as well as the HTTP port (always `80`, unless you know what "NAT" and "port forwarding" means). The integration should detect whether your FreeDS requires username+password, and should fetch the firmware version.
+
+Note that only firmware version 1.0.7 has been tested. **There is no support** (yet) **for 1.1.0-beta firmware**.
 
 Home Assistant should display a new *Device* with two *Switches* (for PWM management) and a couple dozen *Sensors*, such as:
 

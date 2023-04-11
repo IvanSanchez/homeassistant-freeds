@@ -1,5 +1,3 @@
 {
-  "domains": ["sensor","binary_sensor","switch"],
-  "render_readme": true,
   "name": "FreeDS"
 }
