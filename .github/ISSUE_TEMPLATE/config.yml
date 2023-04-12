@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitLab bug tracker
+    url: https://gitlab.com/IvanSanchez/homeassistant-freeds/-/issues
+    about: >
+      Development of `homeassistant-freeds` happens mostly on Git**Lab**, not
+      Git**Hub**. If you wish to report a problem, please do so in the issue
+      tracker at the GitLab repository.
