@@ -4,6 +4,8 @@ DOMAIN = "freeds"
 # Working modes as defined for FW version 1.0.7
 
 WORKING_MODES_1_0 = {
+    0: None,
+
     # ModBus RTU modes
     1: "DDS238",
     2: "DDSU666",
@@ -39,6 +41,7 @@ WORKING_MODES_1_0 = {
 # Working modes as defined for FW version 1.1-beta
 
 WORKING_MODES_1_1 = {
+    0: None,
     1: "Solax Wifi v2 (ESP01)",
     2: "Solax Wifi v2 (local)",
     3: "Solax Wifi v1 (Hybrid)",

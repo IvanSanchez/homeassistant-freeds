@@ -419,7 +419,7 @@ class FreeDSTemperatureSensor(FreeDSSensor):
 
     @property
     def available(self):
-        return (self._attr_native_value != "-127.0")
+        return (self._attr_available and self._attr_native_value != "-127.0")
 
 
 class FreeDSWorkingModeSensor(FreeDSSensor):

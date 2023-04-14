@@ -62,43 +62,72 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         remove_handler = super().async_add_listener(update_callback, context)
 
         if (not self.running):
-            self.logger.info(f'Starting HTTP request loop for {self.name}')
             self.running = True
             asyncio.create_task(self.loop())
 
         return remove_handler
 
     async def loop(self):
-        mode = await self.query_mode()
-        self.mode = mode
-        if (mode == 'websocket'):
-            self.name = "FreeDS Websocket client"
-            return await self.loop_websocket()
-        else:
-            self.name = "FreeDS Server-Sent Events client"
-            return await self.loop_sse()
+
+        for _ in iter(int, 1):
+            _LOGGER.info(f"Determining sse/websockets mode for {self.name}")
+            mode = await self.query_mode()
+            self.mode = mode
+
+            if (mode == 'websocket'):
+                self.name = "FreeDS Websocket client"
+                return await self.loop_websocket()
+            elif mode == 'sse':
+                self.name = "FreeDS Server-Sent Events client"
+                return await self.loop_sse()
+            await asyncio.sleep(10 * self.retries)
+            self.retries += 1
+            _LOGGER.info(f"Could not determine sse/websockets mode for {self.name}, retrying.")
+            self.async_set_update_error("Could not connect")
 
     async def query_mode(self):
         if self._mode is not None:
             return self._mode
 
         try:
-            # Look for 1.1-beta
+            # Does the host respond at all?
+            resp = await self.session.get(f'http://{self.host}:{self.port}/', auth=self.auth)
+            _LOGGER.info(f'Status response from http://{self.host}:{self.port}/ is {resp.status}')
+
+            if (resp.status != 200):
+                return
+        except Exception:
+            return
+
+        try:
+            # Look for firmware 1.1 endpoint; fw 1.1 implements websockets
             resp = await self.session.get(f'http://{self.host}:{self.port}/api/common', auth=self.auth)
             _LOGGER.info(f'Status response from http://{self.host}:{self.port}/api/common is {resp.status}')
             json = await resp.json()
             _LOGGER.info(f"Fetched version {json['version']}. Starting WebSocket mode.")
             self._fwversion = json['version']
             self._mode = 'websocket'
+            return self._mode
         except Exception as err:
-            _LOGGER.info(Exception(err))
-            _LOGGER.info(f"Falling back to SSE mode.")
-            self._mode = 'sse'
-        return self._mode
+            pass
+
+        try:
+            # Look for SSE endpoint
+            resp = await self.session.get(f'http://{self.host}:{self.port}/events', auth=self.auth)
+            _LOGGER.info(f'Status response from http://{self.host}:{self.port}/events is {resp.status}')
+            status = resp.status
+            resp.close()
+            if status == 200:
+                _LOGGER.info(f"Starting SSE mode.")
+                self._mode = 'sse'
+                return self._mode
+        except Exception as err:
+            pass
 
 
     async def loop_websocket(self):
         """Main loop: receive websockets"""
+        self.logger.info(f'Starting websockets loop for {self.name}')
 
         async for websocket in websockets.connect(f"ws://{self.host}:{self.port}/jsonWeb"):
             try:
@@ -116,6 +145,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 await asyncio.sleep(10 * self.retries)
                 self.retries += 1
                 self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting...")
+
                 continue
 
         self.logger.info(f'Websockets loop stopped for {self.name} (no entities)')
@@ -124,6 +154,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
     async def loop_sse(self):
         """Main loop: creates HTTP connection and fetches data via SSE"""
+        self.logger.info(f'Starting SSE request loop for {self.name}')
 
         for _ in iter(int, 1):
             try:

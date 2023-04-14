@@ -75,11 +75,12 @@ class FreeDSLight(FreeDSEntity, LightEntity):
         """Handle updated data from the coordinator."""
 
         self.json_field = "Oled"
-        value_on = bool(int(super()._handle_coordinator_update()))
+        value_on = super()._handle_coordinator_update()
         self.json_field = "screenBrightness"
         value_bright = super()._handle_coordinator_update()
 
         if (value_on is not None):
+            value_on = bool(int(value_on))
             if (not self._attr_available or value_on != self._attr_is_on or value_bright != self._attr_brightness):
                 self._attr_available = True
                 self._attr_is_on = value_on
