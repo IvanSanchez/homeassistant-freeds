@@ -229,7 +229,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                                     },
                                     "Inverter": {
                                         "wsolar":  event.get('wsolar'),
-                                        "wgrid":   event.get('wsolar'),
+                                        "wgrid":   event.get('wgrid'),
                                         "invTemp": event.get('invTemp'),
                                         "wtoday":  event.get('wtoday'),
                                         "gridv":   event.get('gridv'),
