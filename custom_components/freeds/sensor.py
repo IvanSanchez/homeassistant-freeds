@@ -98,7 +98,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             **common_data
         ),
 
-        FreeDSSensor(
+        FreeDSPWMFrequencySensor(
             name="PWM frequency",
             unit=UnitOfFrequency.HERTZ,
             device_class=SensorDeviceClass.FREQUENCY,
@@ -421,6 +421,14 @@ class FreeDSTemperatureSensor(FreeDSSensor):
     def available(self):
         return (self._attr_available and self._attr_native_value != "-127.0")
 
+class FreeDSPWMFrequencySensor(FreeDSSensor):
+    # As FreeDSSensor, but the value displayed is one tenth of the received one.
+    # For whatever reason, FreeDS reports pwm frequency values in decihertz, not
+    # in hertz/kilohertz.
+
+    @property
+    def native_value(self):
+        return int(self._attr_native_value) / 10
 
 class FreeDSWorkingModeSensor(FreeDSSensor):
     # As FreeDSSensor, but translates the (known) numerical working modes into
