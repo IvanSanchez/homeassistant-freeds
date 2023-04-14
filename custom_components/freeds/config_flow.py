@@ -24,6 +24,10 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.default_host = None
+        self.default_port = 80
 
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
@@ -94,11 +98,13 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
+        host = (user_input and user_input.get(CONF_HOST)) or self.default_host or None
+        port = (user_input and user_input.get(CONF_PORT)) or self.default_port or 80
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
-                vol.Required(CONF_HOST, default=self.default_host or None): str,
-                vol.Required(CONF_PORT, default=self.default_port or 80): int
+                vol.Required(CONF_HOST, default=host): str,
+                vol.Required(CONF_PORT, default=port): int
             }),
             errors=errors
         )
