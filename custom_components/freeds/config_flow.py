@@ -1,6 +1,7 @@
 from homeassistant import config_entries
 from .const import DOMAIN
 from homeassistant.const import (CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD)
+from homeassistant.components import zeroconf
 import voluptuous as vol
 import logging
 from typing import Any, Final
@@ -12,17 +13,7 @@ import re
 
 _LOGGER = logging.getLogger(__name__)
 
-
-HOST_SCHEMA: Final = vol.Schema({
-    vol.Required(CONF_HOST): str,
-    vol.Required(CONF_PORT, default=80): int
-})
-FULL_SCHEMA: Final = vol.Schema({
-    vol.Required(CONF_HOST): str,
-    vol.Required(CONF_PORT, default=80): int,
-    vol.Required(CONF_USERNAME): str,
-    vol.Required(CONF_PASSWORD): str,
-})
+session = aiohttp.ClientSession()
 
 
 class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -33,24 +24,39 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
-    # Schema only has a host (hostname/FQDN/ip address)
-    host: str=""
-    uniqueid: str=""
+
+    async def async_step_zeroconf(
+        self, discovery_info: zeroconf.ZeroconfServiceInfo
+    ) -> FlowResult:
+
+        # Check if there's a config entry for this host,
+        # ignore discovery if so.
+        for entry in self.hass.config_entries.async_entries():
+            if entry.domain == DOMAIN and entry.data.get('host') == discovery_info.host:
+                return self.async_abort(reason="single_instance_allowed")
+
+        self.default_host = discovery_info.host
+        self.default_port = discovery_info.port or 80
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({
+                vol.Required(CONF_HOST, self.default_host): str,
+                vol.Required(CONF_PORT, self.default_port): int
+            }),
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
 
-        # print ("async_step_user", user_input)
-
         errors: dict[str, str] = {}
         if user_input is not None:
-            # host: str = user_input[CONF_HOST]
             host: str = user_input[CONF_HOST]
-            port: str = user_input[CONF_PORT]
-            user = user_input.get(CONF_USERNAME)
-            passwd = user_input.get(CONF_PASSWORD)
+            port: str = user_input[CONF_PORT] or 80
+            user = user_input.get(CONF_USERNAME) or 'admin'
+            passwd = user_input.get(CONF_PASSWORD) or ''
 
             try:
                 info = await self._async_get_info(host, port, user, passwd)
@@ -72,10 +78,10 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
-                        "host": user_input[CONF_HOST],
-                        "port": user_input[CONF_PORT],
-                        "username": user_input.get(CONF_USERNAME),
-                        "password": user_input.get(CONF_PASSWORD),
+                        "host": host,
+                        "port": port,
+                        "username": user,
+                        "password": passwd,
                         "uniqueid": info['uniqueid'],
                         "fwversion": info['fwversion']
                     })
@@ -89,13 +95,16 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
 
         return self.async_show_form(
-            step_id="user", data_schema=HOST_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=vol.Schema({
+                vol.Required(CONF_HOST, default=self.default_host or None): str,
+                vol.Required(CONF_PORT, default=self.default_port or 80): int
+            }),
+            errors=errors
         )
 
 
     async def _async_get_info(self, host, port = 80, user = None, passwd = None):
-
-        session = aiohttp.ClientSession()
 
         auth = None
         if (user is not None):
