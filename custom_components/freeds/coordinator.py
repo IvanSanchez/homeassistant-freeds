@@ -41,7 +41,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
     retries = 1
     running = False
 
-    def __init__(self, hass, host, port = 80, user = None, passwd = None, name = "FreeDS"):
+    def __init__(self, hass, host, port = 80, user = None, passwd = None, name = "FreeDS client"):
         """Initialize coordinator."""
         super().__init__( hass, _LOGGER, name = name)
         self.host = host
@@ -75,10 +75,8 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             self.mode = mode
 
             if (mode == 'websocket'):
-                self.name = "FreeDS Websocket client"
                 return await self.loop_websocket()
             elif mode == 'sse':
-                self.name = "FreeDS Server-Sent Events client"
                 return await self.loop_sse()
             await asyncio.sleep(10 * self.retries)
             self.retries += 1
@@ -127,28 +125,34 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
     async def loop_websocket(self):
         """Main loop: receive websockets"""
-        self.logger.info(f'Starting websockets loop for {self.name}')
+        self.logger.info(f'Starting websocket loop for {self.name}')
 
         async for websocket in websockets.connect(f"ws://{self.host}:{self.port}/jsonWeb"):
             try:
                 async for message in websocket:
+                    if (not self._listeners):
+                        break
+                    retries = 1
                     # The websocket messages from firmware 1.1-beta16 are split
                     # into several categories: web, relays, energy, temperature
                     self.async_set_updated_data(json.loads(message))
 
-            except websockets.ConnectionClosed:
+            except websockets.ConnectionClosed as err:
+                if (not self._listeners):
+                    break
                 if (self.retries > 1):
                     # Marks entities as "not available" at the *second* consecutive
                     # error
-                    self.async_set_update_error(Exception(self.last_http_error))
+                    self.data = {}
+                    self.async_set_update_error(Exception(err))
 
                 await asyncio.sleep(10 * self.retries)
                 self.retries += 1
-                self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting...")
+                self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting websocket...")
 
                 continue
 
-        self.logger.info(f'Websockets loop stopped for {self.name} (no entities)')
+        self.logger.info(f'Websocket loop stopped for {self.name} (no entities)')
         self.running = False
 
 
@@ -274,13 +278,14 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             if (self.retries > 1):
                 # Marks entities as "not available" at the *second* consecutive
                 # error
+                self.data = {}
                 self.async_set_update_error(Exception(self.last_http_error))
 
             await asyncio.sleep(10 * self.retries)
             self.retries += 1
             self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting...")
 
-        self.logger.info(f'HTTP request loop stopped for {self.name} (no entities)')
+        self.logger.info(f'SSE request loop stopped for {self.name} (no entities)')
         self.running = False
 
     async def async_send_toggle_button(self, button_idx):
