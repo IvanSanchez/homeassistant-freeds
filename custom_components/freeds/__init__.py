@@ -18,6 +18,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     user = entry.data['username']
     passwd = entry.data['password']
 
+    if user is None:
+        configuration_url = f'http://{host}:{port}'
+    else:
+        configuration_url = f'http://{user}:{passwd}@{host}:{port}'
+
     coordinator = FreeDSCoordinator(hass, host, port=port, user=user, passwd=passwd, name = f'FreeDS {uniqueid} HTTP client')
 
     # TODO:(re-)fetch FW version from coordinator
@@ -30,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "device_info": {
             "identifiers": { (DOMAIN, uniqueid) },
             "name": f"FreeDS {uniqueid}",
-            "configuration_url": f'http://{host}',
+            "configuration_url": configuration_url,
             "config_entries": [entry],
             # "default_manufacturer": "FreeDS"
             "sw_version": entry.data['fwversion']
