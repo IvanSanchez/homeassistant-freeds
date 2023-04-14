@@ -25,7 +25,8 @@ import random
 
 from .const import (
     DOMAIN,
-    WORKING_MODES
+    WORKING_MODES_1_0,
+    WORKING_MODES_1_1,
 )
 
 from .entity import FreeDSEntity
@@ -48,6 +49,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:solar-power",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="wsolar",
             **common_data
         ),
@@ -58,7 +60,19 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:transmission-tower",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="wgrid",
+            **common_data
+        ),
+        FreeDSSensor(
+            name="Grid Voltage",
+            unit=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.VOLTAGE,
+            # icon="mdi:transmission-tower",
+            state_class=SensorStateClass.MEASUREMENT,
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
+            json_field="gridv",
             **common_data
         ),
         FreeDSSensor(
@@ -68,6 +82,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:battery-charging",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="wbattery",
             **common_data
         ),
@@ -78,6 +93,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:flash",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="loadCalcWatts",
             **common_data
         ),
@@ -89,6 +105,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="pwmfrec",
             **common_data
         ),
@@ -98,6 +115,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:square-wave",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="pwm",
             **common_data
         ),
@@ -109,6 +127,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:thermometer-water",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Temperature",
             json_field="tempTermo",
             **common_data
         ),
@@ -119,6 +138,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:thermometer",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Temperature",
             json_field="tempTriac",
             **common_data
         ),
@@ -129,6 +149,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:thermometer",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="invTemp",
             **common_data
         ),
@@ -139,20 +160,21 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:thermometer",
             state_class=SensorStateClass.MEASUREMENT,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Temperature",
             json_field="tempCustom",
             **common_data
         ),
 
-        FreeDSSensor(
-            name="Inverter state of charge",
-            unit=PERCENTAGE,
-            device_class=SensorDeviceClass.BATTERY,
-            # icon="mdi:resistor",
-            state_class=SensorStateClass.MEASUREMENT,
-            # entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="invSoC",
-            **common_data
-        ),
+        # FreeDSSensor(
+        #     name="Inverter state of charge",
+        #     unit=PERCENTAGE,
+        #     device_class=SensorDeviceClass.BATTERY,
+        #     # icon="mdi:resistor",
+        #     state_class=SensorStateClass.MEASUREMENT,
+        #     # entity_category=EntityCategory.DIAGNOSTIC,
+        #     json_field="invSoC",
+        #     **common_data
+        # ),
 
         FreeDSSensor(
             name="Inverter Line 1 Voltage",
@@ -161,6 +183,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="pv1v",
             **common_data
         ),
@@ -171,17 +194,20 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="pv1c",
             **common_data
         ),
         FreeDSSensor(
             name="Inverter Line 1 Power",
-            unit=UnitOfElectricPotential.VOLT,
+            unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="pw1",
+            json_section="Inverter",
+            json_field="pv1w",
+            # json_field="pw1", # Typo in 1.0.7rev2!
             **common_data
         ),
         FreeDSSensor(
@@ -191,6 +217,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="pv2v",
             **common_data
         ),
@@ -201,17 +228,20 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Inverter",
             json_field="pv2c",
             **common_data
         ),
         FreeDSSensor(
             name="Inverter Line 2 Power",
-            unit=UnitOfElectricPotential.VOLT,
+            unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
             # icon="mdi:resistor",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="pw2",
+            json_section="Inverter",
+            json_field="pv2w",
+            # json_field="pw1", # Typo in 1.0.7rev2!
             **common_data
         ),
 
@@ -222,6 +252,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwToday",
             **common_data
         ),
@@ -232,6 +263,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwYesterday",
             **common_data
         ),
@@ -242,6 +274,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:resistor",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwTotal",
             **common_data
         ),
@@ -252,6 +285,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:transmission-tower-import",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwExportToday",
             **common_data
         ),
@@ -262,6 +296,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:transmission-tower-import",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwExportYesterday",
             **common_data
         ),
@@ -272,6 +307,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:transmission-tower-import",
             state_class=SensorStateClass.TOTAL_INCREASING,
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Energy",
             json_field="KwExportTotal",
             **common_data
         ),
@@ -283,6 +319,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:sine-wave",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Meter",
             json_field="mvoltage",
             **common_data
         ),
@@ -293,6 +330,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:sine-wave",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Meter",
             json_field="mcurrent",
             **common_data
         ),
@@ -303,6 +341,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:sine-wave",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Meter",
             json_field="mfrequency",
             **common_data
         ),
@@ -313,6 +352,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # icon="mdi:sine-wave",
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Meter",
             json_field="mpowerfactor",
             **common_data
         ),
@@ -324,7 +364,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             icon="mdi:lan",
             # state_class=None,
             entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="wversion",
+            json_section="Web",
+            # json_field="wversion", # Name change between 1.0.x and 1.1-beta
+            json_field="workingMode",
             **common_data
         ),
     ]
@@ -362,8 +404,12 @@ class FreeDSSensor(FreeDSEntity, SensorEntity):
             not self._attr_available or value != self._attr_native_value)
         ):
             self._attr_available = True
-            self._attr_native_value = self.coordinator.data[self.json_field]
+            self._attr_native_value = value
             self.async_write_ha_state()
+
+    @property
+    def available(self):
+        return (self._attr_available and self._attr_native_value is not None)
 
 
 class FreeDSTemperatureSensor(FreeDSSensor):
@@ -383,7 +429,10 @@ class FreeDSWorkingModeSensor(FreeDSSensor):
 
     @property
     def native_value(self):
+
         if (self._attr_native_value is None):
             return None
+        elif self.coordinator.mode == 'websocket':
+            return WORKING_MODES_1_1.get(self._attr_native_value) or self._attr_native_value
         else:
-            return WORKING_MODES[self._attr_native_value]
+            return WORKING_MODES_1_0.get(self._attr_native_value) or self._attr_native_value

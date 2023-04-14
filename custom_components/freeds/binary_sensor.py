@@ -42,39 +42,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             device_class=BinarySensorDeviceClass.PROBLEM,
             # icon="mdi:alert",
             entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="error",
-            **common_data
-        ),
-        FreeDSBinarySensor(
-            name="Relay 1",
-            device_class=BinarySensorDeviceClass.PLUG,
-            icon="mdi:connection",
-            # entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="R01",
-            **common_data
-        ),
-        FreeDSBinarySensor(
-            name="Relay 2",
-            device_class=BinarySensorDeviceClass.PLUG,
-            icon="mdi:connection",
-            # entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="R02",
-            **common_data
-        ),
-        FreeDSBinarySensor(
-            name="Relay 3",
-            device_class=BinarySensorDeviceClass.PLUG,
-            icon="mdi:connection",
-            # entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="R03",
-            **common_data
-        ),
-        FreeDSBinarySensor(
-            name="Relay 4",
-            device_class=BinarySensorDeviceClass.PLUG,
-            icon="mdi:connection",
-            # entity_category=EntityCategory.DIAGNOSTIC,
-            json_field="R04",
             **common_data
         ),
     ]

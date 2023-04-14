@@ -74,8 +74,8 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_create_entry(title=f"FreeDS {info['uniqueid']}", data={
                         "host": user_input[CONF_HOST],
                         "port": user_input[CONF_PORT],
-                        "username": user_input[CONF_USERNAME],
-                        "password": user_input[CONF_PASSWORD],
+                        "username": user_input.get(CONF_USERNAME),
+                        "password": user_input.get(CONF_PASSWORD),
                         "uniqueid": info['uniqueid'],
                         "fwversion": info['fwversion']
                     })
@@ -106,6 +106,39 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         ### TODO: Implement a more robust method of fetching information for
         ### any newer firmware versions
+
+        _LOGGER.info(f"Checking for the FreeDS version by reading http://{host}:{port}/api/common (method for FreeDS >= 1.1.0-beta16)")
+
+        try:
+            resp = await session.get(f'http://{host}:{port}/', auth=auth)
+            _LOGGER.info(f'Status response from http://{host}:{port}/ is {resp.status}')
+
+            if (resp.status == 401):
+                return { 'error': 'invalid_auth' }
+
+            resp = await session.get(f'http://{host}:{port}/api/common', auth=auth)
+            _LOGGER.info(f'Status response from http://{host}:{port}/api/common is {resp.status}')
+
+            json = await resp.json()
+
+            ### TODO: Fetch the MAC, not just the hostname.
+            ### This depends on a firmware update, see https://github.com/pablozg/freeds/issues/82
+            hostname = re.search('FreeDS \((.*)\)', json['title']).groups()[0]
+            uniqueid = hostname[-4:]
+
+            _LOGGER.info(f"Fetched hostname: {hostname} with unique ID {uniqueid}, firmware version {json['version']}.")
+
+            await session.close()
+            return {
+                "uniqueid": uniqueid,
+                "fwversion": json['version'],
+                "mode": "websocket"
+            }
+
+        except Exception as err:
+            _LOGGER.warning(f"API query failed ({err}). The device at {host} doesn't seem to be a FreeDS ~= 1.1-beta")
+            pass
+
 
         _LOGGER.info(f"Checking for the FreeDS version by scraping http://{host}:{port}/ (method for FreeDS 1.0.x)")
 
@@ -153,7 +186,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
 
         except Exception as err:
-            _LOGGER.warning(f"Scraping failed ({err}). Check that your FreeDS is at the address given.")
+            _LOGGER.warning(f"Scraping failed ({err}). The device at {host} doesn't seem to be a FreeDS 1.0.7.")
 
             await session.close()
 
@@ -162,6 +195,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             return {
                 "uniqueid": None,
-                "error": "invalid_host"
+                "error": "invalid_host",
+                "mode": "sse"
             }
 

@@ -47,6 +47,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             device_class=SwitchDeviceClass.SWITCH,
             icon="mdi:square-wave",
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="POn",
             button_idx = 6,
             **common_data
@@ -56,8 +57,50 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             device_class=SwitchDeviceClass.SWITCH,
             icon="mdi:square-wave",
             # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
             json_field="PwmMan",
             button_idx = 7,
+            **common_data
+        ),
+
+        FreeDSSwitch(
+            name="Relay 1",
+            device_class=SwitchDeviceClass.SWITCH,
+            icon="mdi:connection",
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Relays",
+            json_field="R01",
+            button_idx = 1,
+            **common_data
+        ),
+        FreeDSSwitch(
+            name="Relay 2",
+            device_class=SwitchDeviceClass.SWITCH,
+            icon="mdi:connection",
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Relays",
+            json_field="R02",
+            button_idx = 2,
+            **common_data
+        ),
+        FreeDSSwitch(
+            name="Relay 3",
+            device_class=SwitchDeviceClass.SWITCH,
+            icon="mdi:connection",
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Relays",
+            json_field="R03",
+            button_idx = 3,
+            **common_data
+        ),
+        FreeDSSwitch(
+            name="Relay 4",
+            device_class=SwitchDeviceClass.SWITCH,
+            icon="mdi:connection",
+            # entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Relays",
+            json_field="R04",
+            button_idx = 4,
             **common_data
         ),
     ]

@@ -20,6 +20,7 @@ class FreeDSEntity(CoordinatorEntity):
                  freeds_id = None,
                  coordinator = None,
                  json_field = None,
+                 json_section = None,
                  ):
 
         """Pass coordinator to CoordinatorEntity."""
@@ -38,6 +39,7 @@ class FreeDSEntity(CoordinatorEntity):
 
         # FreeDS-specific attributes
         self.coordinator = coordinator
+        self.json_section = json_section
         self.json_field = json_field
         self.freeds_id = freeds_id
 
@@ -49,11 +51,15 @@ class FreeDSEntity(CoordinatorEntity):
         # Sensors should store this in _attr_native_value, while switches and
         # binary sensors should store this in _attr_is_on.
 
-        if (not self.coordinator.last_update_success):
-            # This means the coordinator had errors while fetching data
-            if (self._attr_available):
-                self._attr_available = False
-                self.async_write_ha_state()
+        try:
+            value = self.coordinator.data[self.json_section][self.json_field]
+        except:
+            value = None
 
-        elif (self.json_field in self.coordinator.data.keys()):
-            return self.coordinator.data[self.json_field]
+        if (not self.coordinator.last_update_success or value is None):
+            # This means the coordinator had errors while fetching data
+            self._attr_available = False
+            self.async_write_ha_state()
+
+        # elif (self.json_section in self.coordinator.data.keys()):
+        return value

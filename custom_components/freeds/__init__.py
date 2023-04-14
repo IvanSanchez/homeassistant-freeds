@@ -7,7 +7,7 @@ from . import sensor
 from .const import DOMAIN
 from .coordinator import FreeDSCoordinator
 
-PLATFORMS: list[str] = ["sensor", "binary_sensor","switch"]
+PLATFORMS: list[str] = ["sensor", "binary_sensor","switch", "light"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a FreeDS sensor from a config entry."""
@@ -19,6 +19,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     passwd = entry.data['password']
 
     coordinator = FreeDSCoordinator(hass, host, port=port, user=user, passwd=passwd, name = f'FreeDS {uniqueid} HTTP client')
+
+    # TODO:(re-)fetch FW version from coordinator
 
     # Stores a ref to the coordinator & device info in the HASS data. This will
     # be fetched by the different domains (sensors, buttons, binary sensors)
