@@ -25,15 +25,21 @@ Restart Home Assistant to ensure the integration can be detected.
 
 ## Usage
 
-Use the Home Assistant GUI to add a new integration (settings → devices & services → add new integration). You should find the FreeDS integration in the list.
+In Home Assistant, go to "Settings", then "Devices & Services".
 
-Enter the IP address (or hostname) of your FreeDS device, as well as the HTTP port (always `80`, unless you know what "NAT" and "port forwarding" means). The integration should detect whether your FreeDS requires username+password, and should fetch the firmware version.
+If your FreeDS is in the same local network than your Home Assistant, then it should be automatically detected:
 
-Note that only firmware version 1.0.7 has been tested. **There is no support** (yet) **for 1.1.0-beta firmware**.
+![Screenshot of FreeDS zeroconf detection in Home Assistant](./screenshot-zeroconf.webp)
 
-Home Assistant should display a new *Device* with two *Switches* (for PWM management) and a couple dozen *Sensors*, such as:
+If your FreeDS is **not** automatically detected , then click on "add new integration" at the bottom, and search for "FreeDS.
 
-![Screenshot of FreeDS sensors in Home Assistant](./screenshot.png)
+Confirm the IP address (or hostname) of your FreeDS device, as well as the HTTP port (always `80`, unless you know what "NAT" and "port forwarding" means). Confirm username/password if needed (the firmware defaults to "admin"/"admin").
+
+This has been tested with FreeDS firmware version 1.0.7rev2 and 1.1.0-beta16.
+
+Home Assistant should display a new *Device* with seven *Switches* (for PWM management and relay toggling, and backlight), and a couple dozen *Sensors*, such as:
+
+![Screenshot of FreeDS sensors in Home Assistant](./screenshot-entities.webp)
 
 ## Bugs? Comments?
 
