@@ -353,7 +353,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             state_class=SensorStateClass.MEASUREMENT,
             entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Meter",
-            json_field="mpowerfactor",
+            json_field="mpowerFactor",
             **common_data
         ),
 
