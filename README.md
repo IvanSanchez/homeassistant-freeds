@@ -10,7 +10,7 @@ This repository also contains a [custom dashboard card](https://developers.home-
 
 - Enable the [HACS](https://hacs.xyz/) integration in your Home Assistant instance.
 - Use the side menu to browse HACS.
-- Navigate to "Integrations", then use the overflow menu (three dots at the top-left) to add a Custom Repository.
+- Navigate to "Integrations", then use the overflow menu (three dots at the top-right) to add a Custom Repository.
 - Enter the URL `https://github.com/IvanSanchez/homeassistant-freeds`, of type "Integration"
 - You should see a new box labelled "FreeDS". Click on it and follow HACS' instructions to download and enable the integration.
 - Restart Home Assistant when HACS tells you to.
@@ -31,15 +31,17 @@ If your FreeDS is in the same local network than your Home Assistant, then it sh
 
 ![Screenshot of FreeDS zeroconf detection in Home Assistant](./screenshot-zeroconf.webp)
 
-If your FreeDS is **not** automatically detected , then click on "add new integration" at the bottom, and search for "FreeDS.
+If your FreeDS is **not** automatically detected , then click on "add new integration" at the bottom, and search for "FreeDS".
 
 Confirm the IP address (or hostname) of your FreeDS device, as well as the HTTP port (always `80`, unless you know what "NAT" and "port forwarding" means). Confirm username/password if needed (the firmware defaults to "admin"/"admin").
 
 This has been tested with FreeDS firmware version 1.0.7rev2 and 1.1.0-beta16.
 
-Home Assistant should display a new *Device* with seven *Switches* (for PWM management and relay toggling, and backlight), and a couple dozen *Sensors*, such as:
+Home Assistant should display a new *Device* with seven *Switches* (for PWM management, relay toggling, and backlight), and a couple dozen *Sensors*, such as:
 
 ![Screenshot of FreeDS sensors in Home Assistant](./screenshot-entities.webp)
+
+This integration creates one entry for every *possible* value that FreeDS *might* report. Depending on the working mode of your FreeDS there might be a lot of "unavailable" values. This is normal. If this bothers you, then keep in mind that it's possible to disable those in settings → devices & services → entities.
 
 ## Bugs? Comments?
 
