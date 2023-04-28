@@ -6,7 +6,6 @@ import voluptuous as vol
 import logging
 from typing import Any, Final
 from homeassistant.data_entry_flow import FlowResult
-from getmac import get_mac_address
 import aiohttp
 import re
 
