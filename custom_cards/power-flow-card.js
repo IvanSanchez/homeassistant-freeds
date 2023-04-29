@@ -287,8 +287,8 @@ class PowerFlowNode extends HTMLElement {
 		this.#arrow.style.width = '80px';
 		this.#arrow.style.height = '30px';
 
-		this.#arrow.innerHTML = `<defs><marker id='head' orient="auto" markerWidth='3' markerHeight='4' refX='0.1' refY='2'><path d='M0,0 V4 L2,2 Z' fill="black"/></marker></defs>
-		<path id='arrow-line' marker-end='url(#head)' stroke-width='2' fill='none' stroke='black' d='M40,0 L40,20' />`
+		this.#arrow.innerHTML = `<defs><marker id='head' orient="auto" markerWidth='3' markerHeight='4' refX='0.1' refY='2'><path d='M0,0 V4 L2,2 Z' fill="var(--primary-text-color)"/></marker></defs>
+		<path id='arrow-line' marker-end='url(#head)' stroke-width='2' fill='none' stroke='var(--primary-text-color)' d='M40,0 L40,20' />`
 
 		if (this.#role == SOURCE) {
 			this.appendChild(this.#icon = document.createElement('state-badge'));
