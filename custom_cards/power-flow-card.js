@@ -141,10 +141,10 @@ class PowerFlowCard extends HTMLElement {
 				<div id="power-center" style='height:80px; width: ${pxWide}px; position:relative;'>
 					<div id="power-left-exchanger" style='position:absolute; left:0;'></div>
 					<div id="power-hub" style='
-						background: var(--lovelace-background, #fafafa);
+						background: var(--secondary-background-color, #fafafa);
 						position:absolute;
 						left:111px; right: 111px; height: 80px;
-						border-color: var(--ha-card-border-color, #e0e0e0);
+						border-color: var( --ha-card-border-color, var(--divider-color, #e0e0e0) );
 						border-radius: var(--ha-card-border-radius, 12px);
 						border-width: var(--ha-card-border-width, 1px);
 						border-style: solid;
