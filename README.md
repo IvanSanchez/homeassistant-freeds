@@ -9,10 +9,9 @@ This repository also contains a [custom dashboard card](https://developers.home-
 #### Guided installation
 
 - Enable the [HACS](https://hacs.xyz/) integration in your Home Assistant instance.
-- Use the side menu to browse HACS.
-- Navigate to "Integrations", then use the overflow menu (three dots at the top-right) to add a Custom Repository.
-- Enter the URL `https://github.com/IvanSanchez/homeassistant-freeds`, of type "Integration"
-- You should see a new box labelled "FreeDS". Click on it and follow HACS' instructions to download and enable the integration.
+- Use the side menu to browse HACS. Go to "integrations".
+- Click the bottom-right button labeled "Browse & download repositories". Search for "FreeDS".
+- Follow HACS' instructions to download and enable the integration.
 - Restart Home Assistant when HACS tells you to.
 
 #### Manual installation
