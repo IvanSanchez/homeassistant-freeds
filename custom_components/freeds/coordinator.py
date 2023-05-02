@@ -132,7 +132,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 async for message in websocket:
                     if (not self._listeners):
                         break
-                    retries = 1
+                    self.websocket_ok = True
                     # The websocket messages from firmware 1.1-beta16 are split
                     # into several categories: web, relays, energy, temperature
                     self.async_set_updated_data(json.loads(message))
@@ -140,20 +140,23 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             except websockets.ConnectionClosed as err:
                 if (not self._listeners):
                     break
-                if (self.retries > 1):
-                    # Marks entities as "not available" at the *second* consecutive
-                    # error
-                    self.data = {}
-                    self.async_set_update_error(Exception(err))
 
-                await asyncio.sleep(10 * self.retries)
-                self.retries += 1
+                self.websocket_ok = False
+                asyncio.create_task(self.error_websocket())
+                await asyncio.sleep(10)
                 self.logger.info(f"{self.name} ({self.host}:{self.port}) reconnecting websocket...")
 
                 continue
 
         self.logger.info(f'Websocket loop stopped for {self.name} (no entities)')
         self.running = False
+
+    async def error_websocket(self):
+        """Returns null data to mark entities as "not available" after some time"""
+        await asyncio.sleep(20)
+        if not self.websocket_ok:
+            self.data = {}
+            self.async_set_update_error(Exception(err))
 
 
     async def loop_sse(self):
