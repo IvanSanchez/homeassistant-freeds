@@ -23,7 +23,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfElectricPotential,
     UnitOfFrequency,
-    PERCENTAGE
+    PERCENTAGE,
 )
 
 import random
@@ -33,13 +33,14 @@ from .entity import FreeDSEntity
 
 import traceback
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add switches for passed config_entry in HA."""
 
     # Fetch coordinator and device_info, needs to be passed to each and
     # every constructor.
     # "data" is a dict like {coordinator, device_info, freeds_id}
-    common_data = hass.data[DOMAIN][config_entry.data['uniqueid']]
+    common_data = hass.data[DOMAIN][config_entry.data["uniqueid"]]
 
     switches = [
         FreeDSSwitch(
@@ -49,8 +50,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Web",
             json_field="POn",
-            button_idx = 6,
-            **common_data
+            button_idx=6,
+            **common_data,
         ),
         FreeDSSwitch(
             name="PWM Manual Mode",
@@ -59,10 +60,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Web",
             json_field="PwmMan",
-            button_idx = 7,
-            **common_data
+            button_idx=7,
+            **common_data,
         ),
-
         FreeDSSwitch(
             name="Relay 1",
             device_class=SwitchDeviceClass.SWITCH,
@@ -70,8 +70,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Relays",
             json_field="R01",
-            button_idx = 1,
-            **common_data
+            button_idx=1,
+            **common_data,
         ),
         FreeDSSwitch(
             name="Relay 2",
@@ -80,8 +80,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Relays",
             json_field="R02",
-            button_idx = 2,
-            **common_data
+            button_idx=2,
+            **common_data,
         ),
         FreeDSSwitch(
             name="Relay 3",
@@ -90,8 +90,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Relays",
             json_field="R03",
-            button_idx = 3,
-            **common_data
+            button_idx=3,
+            **common_data,
         ),
         FreeDSSwitch(
             name="Relay 4",
@@ -100,8 +100,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Relays",
             json_field="R04",
-            button_idx = 4,
-            **common_data
+            button_idx=4,
+            **common_data,
         ),
     ]
 
@@ -111,8 +111,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class FreeDSSwitch(FreeDSEntity, SwitchEntity):
     """An individual FreeDSSwitch entry, used for relays and enabling PWM."""
 
-    def __init__ (self, button_idx = None, **kwargs):
-
+    def __init__(self, button_idx=None, **kwargs):
         # Init FreeDSEntity
         super().__init__(**kwargs)
 
@@ -126,9 +125,9 @@ class FreeDSSwitch(FreeDSEntity, SwitchEntity):
 
         value = super()._handle_coordinator_update()
 
-        if (value is not None):
+        if value is not None:
             value = bool(int(value))
-            if (not self._attr_available or value != self._attr_is_on):
+            if not self._attr_available or value != self._attr_is_on:
                 self._attr_available = True
                 self._attr_is_on = value
                 self.async_write_ha_state()

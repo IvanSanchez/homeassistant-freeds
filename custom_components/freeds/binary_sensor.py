@@ -19,7 +19,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfElectricPotential,
     UnitOfFrequency,
-    PERCENTAGE
+    PERCENTAGE,
 )
 
 import random
@@ -28,13 +28,14 @@ from .const import DOMAIN
 
 import traceback
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add sensors for passed config_entry in HA."""
 
     # Fetch coordinator and device_info, needs to be passed to each and
     # every constructor.
     # "data" is a dict like {coordinator, device_info, freeds_id}
-    common_data = hass.data[DOMAIN][config_entry.data['uniqueid']]
+    common_data = hass.data[DOMAIN][config_entry.data["uniqueid"]]
 
     sensors = [
         FreeDSBinarySensor(
@@ -44,7 +45,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # entity_category=EntityCategory.DIAGNOSTIC,
             json_section="Web",
             json_field="error",
-            **common_data
+            **common_data,
         ),
     ]
 
@@ -54,23 +55,21 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class FreeDSBinarySensor(FreeDSEntity, BinarySensorEntity):
     """An individual FreeDSSensor entry for binary states."""
 
-    def __init__ (self, **kwargs):
-
+    def __init__(self, **kwargs):
         # Init FreeDSEntity
         super().__init__(**kwargs)
 
         # Instance attributes built into BinarySensorEntity
         self._attr_is_on = None
 
-
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
         value = super()._handle_coordinator_update()
 
-        if (value is not None):
+        if value is not None:
             value = bool(int(value))
-            if (not self._attr_available or value != self._attr_is_on):
+            if not self._attr_available or value != self._attr_is_on:
                 self._attr_available = True
                 self._attr_is_on = value
                 self.async_write_ha_state()

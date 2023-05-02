@@ -1,17 +1,14 @@
-
 DOMAIN = "freeds"
 
 # Working modes as defined for FW version 1.0.7
 
 WORKING_MODES_1_0 = {
     0: None,
-
     # ModBus RTU modes
     1: "DDS238",
     2: "DDSU666",
     3: "SDM Meter",
     4: "MustSolar",
-
     # HTTP API modes
     21: "Solax v2",
     22: "Solax v2 local",
@@ -21,11 +18,9 @@ WORKING_MODES_1_0 = {
     26: "Fronius",
     27: "FreeDS slave",
     28: "Goodwe",
-
     # MQTT modes
     41: "MQTT broker",
     42: "ICC solar",
-
     # ModBus TCP modes
     61: "SMA BOY",
     62: "VICTRON",

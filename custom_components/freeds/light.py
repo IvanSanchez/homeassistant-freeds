@@ -19,7 +19,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfElectricPotential,
     UnitOfFrequency,
-    PERCENTAGE
+    PERCENTAGE,
 )
 
 import random
@@ -28,13 +28,14 @@ from .const import DOMAIN
 
 import traceback
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add lights for passed config_entry in HA."""
 
     # Fetch coordinator and device_info, needs to be passed to each and
     # every constructor.
     # "data" is a dict like {coordinator, device_info, freeds_id}
-    common_data = hass.data[DOMAIN][config_entry.data['uniqueid']]
+    common_data = hass.data[DOMAIN][config_entry.data["uniqueid"]]
 
     lights = [
         FreeDSLight(
@@ -45,7 +46,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_section="Web",
             # json_field_on="Oled",
             # json_field_brightness="screenBrightness",
-            **common_data
+            **common_data,
         ),
     ]
 
@@ -55,8 +56,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class FreeDSLight(FreeDSEntity, LightEntity):
     """An individual FreeDSSensor entry for binary states."""
 
-    def __init__ (self, button_idx = None, **kwargs):
-
+    def __init__(self, button_idx=None, **kwargs):
         # Init FreeDSEntity
         super().__init__(**kwargs)
 
@@ -70,7 +70,6 @@ class FreeDSLight(FreeDSEntity, LightEntity):
         # FreeDS-specific
         self._button_idx = button_idx
 
-
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
@@ -79,9 +78,13 @@ class FreeDSLight(FreeDSEntity, LightEntity):
         self.json_field = "screenBrightness"
         value_bright = super()._handle_coordinator_update()
 
-        if (value_on is not None):
+        if value_on is not None:
             value_on = bool(int(value_on))
-            if (not self._attr_available or value_on != self._attr_is_on or value_bright != self._attr_brightness):
+            if (
+                not self._attr_available
+                or value_on != self._attr_is_on
+                or value_bright != self._attr_brightness
+            ):
                 self._attr_available = True
                 self._attr_is_on = value_on
                 self._attr_brightness = value_bright
@@ -105,7 +108,3 @@ class FreeDSLight(FreeDSEntity, LightEntity):
             return await self.coordinator.async_send_toggle_button(self._button_idx)
         else:
             pass
-
-
-
-

@@ -1,4 +1,3 @@
-
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -7,22 +6,22 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import DOMAIN
 
+
 class FreeDSEntity(CoordinatorEntity):
     """Funcionality common to all FreeDS entities"""
 
-    def __init__(self,
-                 name = None,
-                 icon = None,
-                 entity_category = None,
-                 device_class = None,
-                 device_info = None,
-
-                 freeds_id = None,
-                 coordinator = None,
-                 json_field = None,
-                 json_section = None,
-                 ):
-
+    def __init__(
+        self,
+        name=None,
+        icon=None,
+        entity_category=None,
+        device_class=None,
+        device_info=None,
+        freeds_id=None,
+        coordinator=None,
+        json_field=None,
+        json_section=None,
+    ):
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator, context=json_field)
 
@@ -43,7 +42,6 @@ class FreeDSEntity(CoordinatorEntity):
         self.json_field = json_field
         self.freeds_id = freeds_id
 
-
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
@@ -56,7 +54,7 @@ class FreeDSEntity(CoordinatorEntity):
         except:
             value = None
 
-        if (not self.coordinator.last_update_success or value is None):
+        if not self.coordinator.last_update_success or value is None:
             # This means the coordinator had errors while fetching data
             self._attr_available = False
             self.async_write_ha_state()
