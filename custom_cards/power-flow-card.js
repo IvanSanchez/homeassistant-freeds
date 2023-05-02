@@ -54,6 +54,9 @@ class PowerFlowCard extends HTMLElement {
 	// An array of entity names with negative value for default sink calculations
 	#negatives = [];
 
+	// The HTML Element for the hub (to set its text)
+	#hubElement;
+
 	constructor() {
 		super()
 	}
@@ -66,16 +69,20 @@ class PowerFlowCard extends HTMLElement {
 			node.state = hass.states[entity];
 		}
 
-		// Calculate value of power sink
+		// Calculate value of power sink and total input
 		if (!this.#defaultSink) {return}
 		let sunk = 0;
+		let totalInput = 0;
+		let unitOfMeasurement;
 		for (const positive of this.#positives) {
 			const v = Number(hass.states[positive].state);
 			if (isNaN(v)) {
 				sunk = NaN;
 			} else {
 				sunk += v;
+				totalInput += Math.max(0, v);
 			}
+			unitOfMeasurement ??= hass.states[positive].attributes.unit_of_measurement;
 		}
 		for (const negative of this.#negatives) {
 			const v = Number(hass.states[negative].state);
@@ -88,13 +95,13 @@ class PowerFlowCard extends HTMLElement {
 
 		if (isNaN(sunk)) {
 			this.#defaultSink.state = {
-				attributes:{icon: 'mdi:home'},
+				attributes:{icon: 'mdi:home', unit_of_measurement: unitOfMeasurement},
 				state: NaN,
 				entity_id: ""
 			}
 		} else {
 			this.#defaultSink.state = {
-				attributes:{icon: 'mdi:home'},
+				attributes:{icon: 'mdi:home', unit_of_measurement: unitOfMeasurement},
 				state: sunk.toFixed(1),
 				entity_id: ""
 			}
@@ -107,11 +114,12 @@ class PowerFlowCard extends HTMLElement {
 		}
 		if (!isNaN(maxAbsolute)) {
 			for (const [entity, node] of Object.entries(this.#nodes)) {
-				node.setArrowWidth(10 * Math.abs(node.state.state) / maxAbsolute);
+				node.setArrowWidth(10 * Math.sqrt(Math.abs(node.state.state) / maxAbsolute));
 			}
-			this.#defaultSink.setArrowWidth(10 * sunk / maxAbsolute);
+			this.#defaultSink.setArrowWidth(10 * Math.sqrt(sunk / maxAbsolute));
 		}
 
+		this.#hubElement.innerText = totalInput + " " + unitOfMeasurement;
 	}
 
 	// The user supplied configuration. Throw an exception and Home Assistant
@@ -135,7 +143,7 @@ class PowerFlowCard extends HTMLElement {
 		const pxWide = 84 * itemsWide + 220;
 
 		this.innerHTML = `
-			<ha-card header="Power Flow">
+			<ha-card>
 			<div style='margin: 0 auto 10px auto; width: ${pxWide}px'>
 				<div id="power-sources" style='text-align: center'></div>
 				<div id="power-center" style='height:80px; width: ${pxWide}px; position:relative;'>
@@ -148,6 +156,8 @@ class PowerFlowCard extends HTMLElement {
 						border-radius: var(--ha-card-border-radius, 12px);
 						border-width: var(--ha-card-border-width, 1px);
 						border-style: solid;
+						text-align: center;
+						line-height: 80px;
 						'></div>
 					<div id="power-right-exchanger" style='position:absolute; right:0;'></div>
 				</div>
@@ -160,6 +170,7 @@ class PowerFlowCard extends HTMLElement {
 		const snkCnt = this.querySelector("#power-sinks");
 		const leftCnt = this.querySelector("#power-left-exchanger");
 		const rightCnt = this.querySelector("#power-right-exchanger");
+		this.#hubElement = this.querySelector("#power-hub");
 
 		this.#config.sources.forEach(({entity, inverted})=>{
 			const node = new PowerFlowNode(SOURCE, inverted);
@@ -343,7 +354,7 @@ class PowerFlowNode extends HTMLElement {
 
 		if (s.state && !isNaN(s.state)) {
 			const v = (this.#inverted ? -s.state : s.state);
-			this.#text.innerText = v + " W";
+			this.#text.innerText = v + " " + s.attributes.unit_of_measurement;
 			if (this.#role === LEFT_EXCHANGE) {
 				if (v > 0) {
 					this.#text.style.top = '8px';
