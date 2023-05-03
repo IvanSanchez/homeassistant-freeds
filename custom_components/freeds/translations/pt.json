@@ -1,0 +1,24 @@
+{
+	"config": {
+		"abort": {
+			"already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+		},
+		"error": {
+			"already_configured": "O FreeDS com o mesmo MAC address já existe",
+			"invalid_host": "Erro a ligar ao FreeDS",
+			"invalid_auth": "Autenticação invalida, inserir o nome de utilizador e senha correcta",
+			"unknown": "[%key:common::config_flow::error::unknown%]"
+		},
+		"step": {
+			"user": {
+				"description": "Certifica-te que o FreeDS está ligado e tem um IP fixo.",
+				"data": {
+					"host": "Endereço de IP ou nome",
+					"port": "Número da Porta HTTP",
+					"username": "Utilizador",
+					"password": "Senha"
+				}
+			}
+		}
+	}
+}
