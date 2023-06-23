@@ -43,7 +43,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     common_data = hass.data[DOMAIN][config_entry.data["uniqueid"]]
 
     sensors = [
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Solar Power",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -54,7 +54,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="wsolar",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Grid Power",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -65,7 +65,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="wgrid",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Grid Voltage",
             unit=UnitOfElectricPotential.VOLT,
             device_class=SensorDeviceClass.VOLTAGE,
@@ -76,7 +76,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="gridv",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Battery Power",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -87,7 +87,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="wbattery",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Surplus Load",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -109,7 +109,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pwmfrec",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="PWM %",
             unit=PERCENTAGE,
             icon="mdi:square-wave",
@@ -173,7 +173,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         #     json_field="invSoC",
         #     **common_data
         # ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 1 Voltage",
             unit=UnitOfElectricPotential.VOLT,
             device_class=SensorDeviceClass.VOLTAGE,
@@ -184,7 +184,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pv1v",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 1 Current",
             unit=UnitOfElectricCurrent.AMPERE,
             device_class=SensorDeviceClass.CURRENT,
@@ -195,7 +195,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pv1c",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 1 Power",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -207,7 +207,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # json_field="pw1", # Typo in 1.0.7rev2!
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 2 Voltage",
             unit=UnitOfElectricPotential.VOLT,
             device_class=SensorDeviceClass.VOLTAGE,
@@ -218,7 +218,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pv2v",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 2 Current",
             unit=UnitOfElectricCurrent.AMPERE,
             device_class=SensorDeviceClass.CURRENT,
@@ -229,7 +229,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="pv2c",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Inverter Line 2 Power",
             unit=UnitOfPower.WATT,
             device_class=SensorDeviceClass.POWER,
@@ -241,7 +241,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # json_field="pw1", # Typo in 1.0.7rev2!
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Surplus Energy (Today)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -252,7 +252,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwToday",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Surplus Energy (Yesterday)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -263,7 +263,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwYesterday",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Surplus Energy (Total)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -274,7 +274,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwTotal",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Exported Energy (Today)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -285,7 +285,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwExportToday",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Exported Energy (Yesterday)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -296,7 +296,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwExportYesterday",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Exported Energy (Total)",
             unit=UnitOfEnergy.KILO_WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
@@ -307,7 +307,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="KwExportTotal",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="AC Voltage",
             unit=UnitOfElectricPotential.VOLT,
             device_class=SensorDeviceClass.VOLTAGE,
@@ -318,7 +318,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="mvoltage",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="AC Current",
             unit=UnitOfElectricCurrent.AMPERE,
             device_class=SensorDeviceClass.CURRENT,
@@ -329,7 +329,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="mcurrent",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="AC Frequency",
             unit=UnitOfFrequency.HERTZ,
             device_class=SensorDeviceClass.FREQUENCY,
@@ -340,7 +340,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="mfrequency",
             **common_data,
         ),
-        FreeDSSensor(
+        FreeDSNumericSensor(
             name="Power Factor",
             unit=PERCENTAGE,
             device_class=SensorDeviceClass.POWER_FACTOR,
@@ -399,6 +399,28 @@ class FreeDSSensor(FreeDSEntity, SensorEntity):
     @property
     def available(self):
         return self._attr_available and self._attr_native_value is not None
+
+
+class FreeDSNumericSensor(FreeDSSensor):
+    """A FreeDS Sensor which ignores non-numerical values"""
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+
+        try:
+            value = float(self.coordinator.data[self.json_section][self.json_field])
+        except:
+            value = None
+
+        if value is not None and self.coordinator.last_update_success:
+            if not self._attr_available or value != self._attr_native_value:
+                self._attr_available = True
+                self._attr_native_value = value
+                self.async_write_ha_state()
+        else:
+            self._attr_available = False
+            self._attr_native_value = value
+            self.async_write_ha_state()
 
 
 class FreeDSTemperatureSensor(FreeDSSensor):
