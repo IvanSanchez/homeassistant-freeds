@@ -44,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "identifiers": {(DOMAIN, uniqueid)},
             "name": f"FreeDS {uniqueid}",
             "configuration_url": configuration_url,
-            "config_entries": [entry],
+            # "config_entries": [entry],
             # "default_manufacturer": "FreeDS"
             "sw_version": entry.data["fwversion"],
         },
@@ -61,7 +61,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # details
     # print ("freeds unload entry", entry.data)
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_forward_entry_unload(entry, PLATFORMS)
     # if unload_ok:
     # hass.data[DOMAIN].pop(entry.entry_id)
 
