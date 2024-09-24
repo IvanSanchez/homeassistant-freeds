@@ -12,8 +12,6 @@ import re
 
 _LOGGER = logging.getLogger(__name__)
 
-session = aiohttp.ClientSession()
-
 
 class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Example config flow."""
@@ -120,6 +118,9 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def _async_get_info(self, host, port=80, user=None, passwd=None):
+
+        session = aiohttp.ClientSession()
+
         auth = None
         if user is not None:
             auth = aiohttp.BasicAuth(user, passwd)
