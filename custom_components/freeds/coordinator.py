@@ -160,7 +160,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                     break
 
                 self.websocket_ok = False
-                asyncio.create_task(self.error_websocket())
+                asyncio.create_task(self.error_websocket(err))
                 await asyncio.sleep(10)
                 self.logger.info(
                     f"{self.name} ({self.host}:{self.port}) reconnecting websocket..."
@@ -171,7 +171,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         self.logger.info(f"Websocket loop stopped for {self.name} (no entities)")
         self.running = False
 
-    async def error_websocket(self):
+    async def error_websocket(self, err):
         """Returns null data to mark entities as "not available" after some time"""
         await asyncio.sleep(20)
         if not self.websocket_ok:
