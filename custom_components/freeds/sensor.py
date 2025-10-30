@@ -27,6 +27,7 @@ from .const import (
     DOMAIN,
     WORKING_MODES_1_0,
     WORKING_MODES_1_1,
+    ERROR_CODES,
 )
 
 from .entity import FreeDSEntity
@@ -363,6 +364,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             json_field="workingMode",
             **common_data,
         ),
+        FreeDSErrorTypeSensor(
+            name="Error Type",
+            unit=None,
+            device_class=SensorDeviceClass.ENUM,
+            icon="mdi:alert-circle-outline",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            json_section="Web",
+            json_field="error",
+            **common_data,
+        ),
     ]
 
     async_add_entities(sensors)
@@ -462,3 +473,33 @@ class FreeDSWorkingModeSensor(FreeDSSensor):
                 WORKING_MODES_1_0.get(self._attr_native_value)
                 or self._attr_native_value
             )
+
+
+class FreeDSErrorTypeSensor(FreeDSSensor):
+      # As FreeDSSensor, but translates the (known) numerical error codes into readable strings
+
+    @property
+    def native_value(self):
+        """Return a human-readable comma-separated string of active errors."""
+        code = self._attr_native_value
+        if not code:
+            return None
+
+        active_errors = [name for bit, name in ERROR_CODES.items() if code & bit]
+
+        if not active_errors:
+            return f"Unknown error code ({code})"
+
+        return ", ".join(active_errors)
+
+    @property
+    def extra_state_attributes(self):
+        """Return structured info: raw error code and list of active errors."""
+        code = self._attr_native_value
+        if not code:
+            return {"error_code": 0, "errors": []}
+
+        return {
+            "error_code": code,
+            "errors": [name for bit, name in ERROR_CODES.items() if code & bit]
+        }

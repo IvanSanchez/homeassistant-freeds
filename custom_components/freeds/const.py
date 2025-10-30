@@ -84,3 +84,16 @@ WORKING_MODES_1_1 = {
     45: "ICM Solar (Mqtt)",
     46: "Wibeee (New API)",
 }
+
+# Error codes (bitmask) for FreeDS
+
+ERROR_CODES = {
+    0x01: "Wifi",           # Unable to connect with Local Wifi
+    0x02: "Mqtt",           # MQTT connection error
+    0x04: "Inverter",       # Unable to connect with the inverter
+    0x08: "Data",           # Measurement data reception error
+    0x10: "Mqtt_server",    # MQTT Meter selected but the MQTT server is disabled, please turn on in the Settings menu
+    0x20: "Heater_temp",    # Heater temperature sensor error
+    0x40: "Triac_temp",     # Triac temperature sensor error
+    0x80: "Custom_temp",    # Personalized temperature sensor error
+}
