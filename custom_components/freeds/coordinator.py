@@ -73,18 +73,20 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
     async def loop(self):
         for _ in iter(int, 1):
-            _LOGGER.info(f"Determining sse/websockets mode for {self.name}")
+            _LOGGER.info(f"Determining sse/websockets/getjson mode for {self.name}")
             mode = await self.query_mode()
             self.mode = mode
-
-            if mode == "websocket":
+            
+            if mode == "getjson":
+                return await self.loop_getjson()
+            elif mode == "websocket":
                 return await self.loop_websocket()
             elif mode == "sse":
                 return await self.loop_sse()
             await asyncio.sleep(10 * self.retries)
             self.retries += 1
             _LOGGER.info(
-                f"Could not determine sse/websockets mode for {self.name}, retrying."
+                f"Could not determine sse/websockets/getjson mode for {self.name}, retrying."
             )
             self.async_set_update_error("Could not connect")
 
@@ -105,6 +107,47 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 return
         except Exception:
             return
+        
+        try:
+            # Try to detect JSON-capable firmware
+            url = f"http://{self.host}:{self.port}/api/common"
+            resp = await self.session.get(url, auth=self.auth)
+            _LOGGER.info(f"GET {url} -> status: {resp.status}")
+
+            # Safely try to parse JSON
+            try:
+                data = await resp.json()
+            except Exception as err:
+                _LOGGER.debug(f"{self.name}: /api/common did not return JSON: {err}")
+                data = None
+
+            if isinstance(data, dict):
+                _LOGGER.info(f"Detecting version: {data.get('version')}")
+                version_short = None
+                ver = data.get("version")
+                if isinstance(ver, str):
+                    # Try to take slice 4..8 and get digits only
+                    try:
+                        slice_txt = ver[4:8]
+                        digits = "".join(ch for ch in slice_txt if ch.isdigit())
+                        if digits:
+                            version_short = int(digits)
+                    except Exception:
+                        version_short = None
+
+                if version_short is not None and version_short > 20:
+                    self._fwversion = ver
+                    self._mode = "getjson"
+                    _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (version {version_short})")
+                    return self._mode
+                else:
+                    _LOGGER.debug(f"{self.name}: JSON mode not applicable, version slice={version_short}")
+            else:
+                _LOGGER.debug(f"{self.name}: /api/common returned non-dict response")
+
+        except Exception as err:
+            _LOGGER.debug(f"{self.name}: GET /api/common failed: {err}")
+            pass
 
         try:
             # Look for firmware 1.1 endpoint; fw 1.1 implements websockets
@@ -138,6 +181,93 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 return self._mode
         except Exception as err:
             pass
+
+
+    async def loop_getjson(self):
+        _LOGGER.info(f"Starting GET-JSON loop for {self.name}")
+        
+        url = f"http://{self.host}:{self.port}/json"
+        
+        # Forcem que no es reutilitzin connexions per evitar 'Data after Connection: close'
+        # o lectures de buffers bruts d'altres peticions.
+        headers = {"Connection": "close"}
+
+        for _ in iter(int, 1):
+            if not self._listeners:
+                break
+
+            try:
+                # Fem la petició
+                async with self.session.get(url, auth=self.auth, headers=headers) as resp:
+                    if resp.status == 200:
+                        # Llegim el text primer per evitar errors de decodificació parcial
+                        text_data = await resp.text()
+                        try:
+                            data = json.loads(text_data)
+                        except json.JSONDecodeError:
+                             # A vegades el firmware envia "}}HTTP/1.1" enganxat al final
+                             # Intentem netejar-ho buscant l'últim '}'
+                             if "}" in text_data:
+                                 clean_text = text_data[:text_data.rfind("}")+1]
+                                 data = json.loads(clean_text)
+                             else:
+                                 raise
+
+                        self.retries = 1
+                        self.async_set_updated_data(data)
+                    else:
+                        _LOGGER.warning(f"Error fetching {url}, status: {resp.status}")
+                        self.last_http_error = f"HTTP {resp.status}"
+                        # Forcem error per anar al bloc except
+                        raise Exception(f"HTTP Status {resp.status}")
+
+            except Exception as err:
+                self.last_http_error = err
+                
+                # --- BLOC DE RECUPERACIÓ D'EMERGÈNCIA ---
+                # L'error del log mostra que les dades JSON arriben DINS l'excepció.
+                # Si el protocol falla però tenim les dades, les intentem salvar.
+                recovered = False
+                err_str = str(err)
+                if "Data after Connection: close" in err_str or "{" in err_str:
+                    try:
+                        # Busquem alguna cosa que sembli un JSON al missatge d'error
+                        import re
+                        match = re.search(r'(\{.*\})', err_str)
+                        if match:
+                            raw_json = match.group(1)
+                            # El log mostra bytes b'...', netegem si cal
+                            if raw_json.startswith("b'") or raw_json.startswith('b"'):
+                                raw_json = raw_json[2:-1] # Treu b'...'
+                            
+                            # A vegades el JSON recuperat té escombraries al final, netegem fins l'últim '}'
+                            if raw_json.count('{') > 0 and raw_json.rfind('}') > 0:
+                                raw_json = raw_json[:raw_json.rfind('}')+1]
+                                
+                            data = json.loads(raw_json) # Si això peta, anem al except final
+                            
+                            _LOGGER.info(f"{self.name}: Recovered JSON data from HTTP error successfully.")
+                            self.retries = 1
+                            self.async_set_updated_data(data)
+                            recovered = True
+                    except Exception as parse_err:
+                        _LOGGER.debug(f"Failed to recover JSON from error: {parse_err}")
+
+                if not recovered:
+                    if self.retries > 1:
+                        self.data = {}
+                        self.async_set_update_error(Exception(self.last_http_error))
+
+                    _LOGGER.debug(f"Error requesting {url}: {err}. Retrying in 60s.")
+                    await asyncio.sleep(60)
+                    self.retries += 1
+                    continue
+
+            # Interval de Polling de 5 segons
+            await asyncio.sleep(5)
+
+        _LOGGER.info(f"END GET-JSON loop for {self.name}")
+        self.running = False
 
     async def loop_websocket(self):
         """Main loop: receive websockets"""
@@ -334,3 +464,4 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
         self.logger.info(f"Response status to button toggle: {post_response.status}")
         await post_response.text()
+             
