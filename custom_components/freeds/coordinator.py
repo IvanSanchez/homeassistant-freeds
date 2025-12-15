@@ -188,8 +188,8 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         
         url = f"http://{self.host}:{self.port}/json"
         
-        # Forcem que no es reutilitzin connexions per evitar 'Data after Connection: close'
-        # o lectures de buffers bruts d'altres peticions.
+        # We force connections not to be reused to avoid 'Data after Connection: close' 
+        # or dirty buffer reads from other requests.
         headers = {"Connection": "close"}
 
         for _ in iter(int, 1):
@@ -197,16 +197,16 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 break
 
             try:
-                # Fem la petició
+                # We make the request
                 async with self.session.get(url, auth=self.auth, headers=headers) as resp:
                     if resp.status == 200:
-                        # Llegim el text primer per evitar errors de decodificació parcial
+                        # We read the text first to avoid partial decoding errors.
                         text_data = await resp.text()
                         try:
                             data = json.loads(text_data)
                         except json.JSONDecodeError:
-                             # A vegades el firmware envia "}}HTTP/1.1" enganxat al final
-                             # Intentem netejar-ho buscant l'últim '}'
+                            # Sometimes FreeDS sends "}}HTTP/1.1" appended to the end
+                            # We try to clean it up by looking for the last '}  
                              if "}" in text_data:
                                  clean_text = text_data[:text_data.rfind("}")+1]
                                  data = json.loads(clean_text)
@@ -218,33 +218,33 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                     else:
                         _LOGGER.warning(f"Error fetching {url}, status: {resp.status}")
                         self.last_http_error = f"HTTP {resp.status}"
-                        # Forcem error per anar al bloc except
+                        # We force error to go to the except block
                         raise Exception(f"HTTP Status {resp.status}")
 
             except Exception as err:
                 self.last_http_error = err
                 
-                # --- BLOC DE RECUPERACIÓ D'EMERGÈNCIA ---
-                # L'error del log mostra que les dades JSON arriben DINS l'excepció.
-                # Si el protocol falla però tenim les dades, les intentem salvar.
+                # --- EMERGENCY RECOVERY BLOCK ---
+                # The error log shows that the JSON data arrives INSIDE the exception.
+                # If the protocol fails but we have the data, we try to save it.
                 recovered = False
                 err_str = str(err)
                 if "Data after Connection: close" in err_str or "{" in err_str:
                     try:
-                        # Busquem alguna cosa que sembli un JSON al missatge d'error
+                        # We look for something that looks like JSON in the error message
                         import re
                         match = re.search(r'(\{.*\})', err_str)
                         if match:
                             raw_json = match.group(1)
-                            # El log mostra bytes b'...', netegem si cal
+                            # The log shows bytes b'...', clean if necessary
                             if raw_json.startswith("b'") or raw_json.startswith('b"'):
-                                raw_json = raw_json[2:-1] # Treu b'...'
+                                raw_json = raw_json[2:-1] # Take out b'...'
                             
-                            # A vegades el JSON recuperat té escombraries al final, netegem fins l'últim '}'
+                            # Sometimes the retrieved JSON has garbage at the end, we clean up to the last '}'
                             if raw_json.count('{') > 0 and raw_json.rfind('}') > 0:
                                 raw_json = raw_json[:raw_json.rfind('}')+1]
                                 
-                            data = json.loads(raw_json) # Si això peta, anem al except final
+                            data = json.loads(raw_json) # If this doesn't work, let's go to the final exception
                             
                             _LOGGER.info(f"{self.name}: Recovered JSON data from HTTP error successfully.")
                             self.retries = 1
@@ -263,7 +263,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                     self.retries += 1
                     continue
 
-            # Interval de Polling de 5 segons
+            # Polling interval of 5 seconds
             await asyncio.sleep(5)
 
         _LOGGER.info(f"END GET-JSON loop for {self.name}")
