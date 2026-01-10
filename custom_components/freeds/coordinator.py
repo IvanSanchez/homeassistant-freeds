@@ -123,10 +123,27 @@ class FreeDSCoordinator(DataUpdateCoordinator):
 
             if isinstance(data, dict):
                 _LOGGER.info(f"Detecting version: {data.get('version')}")
-                version_short = None
                 ver = data.get("version")
+
                 if isinstance(ver, str):
+                    # --- For Versions => 2.0 ---
+                    # Exemple: "2.0.0 Beta Build..." -> "2.0.0"
+                    try:
+                        prefix = ver[0:5]
+                        # Verify it look slike a number (Ex: "2.0.0" o "10.0.")
+                        if prefix[0].isdigit() and "." in prefix:
+                            major_ver_str = prefix.split('.')[0] # Get the number before the .
+                            if int(major_ver_str) >= 2:
+                                self._fwversion = ver
+                                self._mode = "getjson"
+                                _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (Major version {major_ver_str}+ detected)")
+                                return self._mode
+                    except Exception:
+                        pass # If this failes , fall bakc to legacy logic
+
+                    # --- OLD LOGIC (Legacy 1.00.0021) ---
                     # Try to take slice 4..8 and get digits only
+                    version_short = None
                     try:
                         slice_txt = ver[4:8]
                         digits = "".join(ch for ch in slice_txt if ch.isdigit())
@@ -135,15 +152,15 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                     except Exception:
                         version_short = None
 
-                if version_short is not None and version_short > 20:
-                    self._fwversion = ver
-                    self._mode = "getjson"
-                    _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (version {version_short})")
-                    return self._mode
-                else:
-                    _LOGGER.debug(f"{self.name}: JSON mode not applicable, version slice={version_short}")
+                    if version_short is not None and version_short > 20:
+                        self._fwversion = ver
+                        self._mode = "getjson"
+                        _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (version {version_short})")
+                        return self._mode
+                    else:
+                        _LOGGER.debug(f"{self.name}: JSON mode not applicable, version slice={version_short}")
             else:
-                _LOGGER.debug(f"{self.name}: /api/common returned non-dict response")
+                _LOGGER.debug(f"{self.name}: /api/common returned non-dict response")  
 
         except Exception as err:
             _LOGGER.debug(f"{self.name}: GET /api/common failed: {err}")
