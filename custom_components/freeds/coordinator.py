@@ -107,63 +107,28 @@ class FreeDSCoordinator(DataUpdateCoordinator):
                 return
         except Exception:
             return
-        
+
         try:
-            # Try to detect JSON-capable firmware
-            url = f"http://{self.host}:{self.port}/api/common"
-            resp = await self.session.get(url, auth=self.auth)
-            _LOGGER.info(f"GET {url} -> status: {resp.status}")
-
-            # Safely try to parse JSON
-            try:
-                data = await resp.json()
-            except Exception as err:
-                _LOGGER.debug(f"{self.name}: /api/common did not return JSON: {err}")
-                data = None
-
-            if isinstance(data, dict):
-                _LOGGER.info(f"Detecting version: {data.get('version')}")
-                ver = data.get("version")
-
-                if isinstance(ver, str):
-                    # --- For Versions => 2.0 ---
-                    # Exemple: "2.0.0 Beta Build..." -> "2.0.0"
-                    try:
-                        prefix = ver[0:5]
-                        # Verify it look slike a number (Ex: "2.0.0" o "10.0.")
-                        if prefix[0].isdigit() and "." in prefix:
-                            major_ver_str = prefix.split('.')[0] # Get the number before the .
-                            if int(major_ver_str) >= 2:
-                                self._fwversion = ver
-                                self._mode = "getjson"
-                                _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (Major version {major_ver_str}+ detected)")
-                                return self._mode
-                    except Exception:
-                        pass # If this failes , fall bakc to legacy logic
-
-                    # --- OLD LOGIC (Legacy 1.00.0021) ---
-                    # Try to take slice 4..8 and get digits only
-                    version_short = None
-                    try:
-                        slice_txt = ver[4:8]
-                        digits = "".join(ch for ch in slice_txt if ch.isdigit())
-                        if digits:
-                            version_short = int(digits)
-                    except Exception:
-                        version_short = None
-
-                    if version_short is not None and version_short > 20:
-                        self._fwversion = ver
-                        self._mode = "getjson"
-                        _LOGGER.info(f"{self.name}: Mode GET/JSON enabled (version {version_short})")
-                        return self._mode
-                    else:
-                        _LOGGER.debug(f"{self.name}: JSON mode not applicable, version slice={version_short}")
-            else:
-                _LOGGER.debug(f"{self.name}: /api/common returned non-dict response")  
+            # Look for firmware with GET/JSON methode => 2.0.2
+            resp = await self.session.get(
+                f"http://{self.host}:{self.port}/json", auth=self.auth
+            )
+            json = await resp.json()
+            _LOGGER.info(f"{self.name}: /json endpoint detected. Enabling GET-JSON.")
+            self._mode = "getjson"
+            return self._mode
 
         except Exception as err:
-            _LOGGER.debug(f"{self.name}: GET /api/common failed: {err}")
+             #If aiohttp throws an exception (like 'Data after Connection: close'),
+             #it confirms the endpoint is active and responding, even if non-compliant.
+             #Workarround for bugy firmware versions 1.1.0021 and 2.0.0
+            error_msg = str(err)
+            if any(indicator in error_msg for indicator in ["200", "400", "Data after"]):
+                _LOGGER.info(f"{self.name}: /json detected via protocol error hint. Status:{resp.status} Enabling GET-JSON.")
+                self._mode = "getjson"
+                return self._mode
+
+            _LOGGER.debug(f"{self.name}: /json endpoint check failed: {err}")
             pass
 
         try:
@@ -199,92 +164,93 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         except Exception as err:
             pass
 
-
     async def loop_getjson(self):
-        _LOGGER.info(f"Starting GET-JSON loop for {self.name}")
-        
+        """Main loop: polling GET/JSON endpoint"""
+        self.logger.info(f"Starting GET/JSON loop for {self.name}")
         url = f"http://{self.host}:{self.port}/json"
-        
-        # We force connections not to be reused to avoid 'Data after Connection: close' 
-        # or dirty buffer reads from other requests.
         headers = {"Connection": "close"}
-
-        for _ in iter(int, 1):
-            if not self._listeners:
-                break
-
+        decoder = json.JSONDecoder()
+    
+        while self._listeners:
             try:
-                # We make the request
-                async with self.session.get(url, auth=self.auth, headers=headers) as resp:
-                    if resp.status == 200:
-                        # We read the text first to avoid partial decoding errors.
-                        text_data = await resp.text()
-                        try:
-                            data = json.loads(text_data)
-                        except json.JSONDecodeError:
-                            # Sometimes FreeDS sends "}}HTTP/1.1" appended to the end
-                            # We try to clean it up by looking for the last '}  
-                             if "}" in text_data:
-                                 clean_text = text_data[:text_data.rfind("}")+1]
-                                 data = json.loads(clean_text)
-                             else:
-                                 raise
-
-                        self.retries = 1
-                        self.async_set_updated_data(data)
-                    else:
-                        _LOGGER.warning(f"Error fetching {url}, status: {resp.status}")
-                        self.last_http_error = f"HTTP {resp.status}"
-                        # We force error to go to the except block
-                        raise Exception(f"HTTP Status {resp.status}")
-
-            except Exception as err:
-                self.last_http_error = err
-                
-                # --- EMERGENCY RECOVERY BLOCK ---
-                # The error log shows that the JSON data arrives INSIDE the exception.
-                # If the protocol fails but we have the data, we try to save it.
-                recovered = False
-                err_str = str(err)
-                if "Data after Connection: close" in err_str or "{" in err_str:
-                    try:
-                        # We look for something that looks like JSON in the error message
-                        import re
-                        match = re.search(r'(\{.*\})', err_str)
-                        if match:
-                            raw_json = match.group(1)
-                            # The log shows bytes b'...', clean if necessary
-                            if raw_json.startswith("b'") or raw_json.startswith('b"'):
-                                raw_json = raw_json[2:-1] # Take out b'...'
-                            
-                            # Sometimes the retrieved JSON has garbage at the end, we clean up to the last '}'
-                            if raw_json.count('{') > 0 and raw_json.rfind('}') > 0:
-                                raw_json = raw_json[:raw_json.rfind('}')+1]
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                        if response.status == 200:
+                            try:
+                                # Intenta primer el mètode normal (firmware nou)
+                                data = await response.json()
+                                self.getjson_ok = True
+                                self.async_set_updated_data(data)
+                            except (json.JSONDecodeError, aiohttp.ClientPayloadError) as json_err:
+                                # Si falla, usa el mètode per firmware vell
+                                self.logger.debug(f"Standard JSON parsing failed, trying old firmware method: {json_err}")
                                 
-                            data = json.loads(raw_json) # If this doesn't work, let's go to the final exception
+                                # Read all available content, ignoring protocol errors
+                                chunks = []
+                                try:
+                                    async for chunk in response.content.iter_any():
+                                        chunks.append(chunk)
+                                except Exception as stream_err:
+                                    self.logger.debug(f"Stream ended with error (expected for old firmware): {stream_err}")
                             
-                            _LOGGER.info(f"{self.name}: Recovered JSON data from HTTP error successfully.")
-                            self.retries = 1
-                            self.async_set_updated_data(data)
-                            recovered = True
-                    except Exception as parse_err:
-                        _LOGGER.debug(f"Failed to recover JSON from error: {parse_err}")
-
-                if not recovered:
-                    if self.retries > 1:
-                        self.data = {}
-                        self.async_set_update_error(Exception(self.last_http_error))
-
-                    _LOGGER.debug(f"Error requesting {url}: {err}. Retrying in 60s.")
-                    await asyncio.sleep(60)
-                    self.retries += 1
-                    continue
-
-            # Polling interval of 5 seconds
-            await asyncio.sleep(5)
-
-        _LOGGER.info(f"END GET-JSON loop for {self.name}")
+                                # Combine all chunks into text
+                                raw_bytes = b''.join(chunks)
+                                text_data = raw_bytes.decode('utf-8', errors='ignore')
+                            
+                                # Parse the JSON object
+                                data, _ = decoder.raw_decode(text_data)
+                                self.getjson_ok = True
+                                self.async_set_updated_data(data)
+                                self.logger.info(f"Successfully parsed JSON using old firmware method for {self.name}")
+                        else:
+                            self.logger.warning(
+                                f"{self.name} GET request failed with status {response.status}"
+                            )
+                            self.getjson_ok = False
+                            asyncio.create_task(self.error_getjson(Exception(f"HTTP {response.status}")))
+            
+                # Espera abans de la següent petició
+                await asyncio.sleep(5)
+            
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                if not self._listeners:
+                    break
+                
+                # Try to extract JSON from error message as fallback (for old firmware 1.1.0021 and 2.0.0)
+                err_msg = str(err)
+                if "{" in err_msg:
+                    try:
+                        start_idx = err_msg.find("{")
+                        potential_json = err_msg[start_idx:]
+                        data, _ = decoder.raw_decode(potential_json)
+                        self.logger.info(f"{self.name}: Recovered JSON from error message (old firmware).")
+                        self.getjson_ok = True
+                        self.async_set_updated_data(data)
+                        await asyncio.sleep(5)
+                        continue
+                    except Exception:
+                        pass
+            
+                self.getjson_ok = False
+                asyncio.create_task(self.error_getjson(err))
+                self.logger.error(
+                    f"{self.name} ({self.host}:{self.port}) GET/JSON error: {err}"
+                )
+                await asyncio.sleep(10)
+                self.logger.info(
+                    f"{self.name} ({self.host}:{self.port}) retrying GET/JSON..."
+                )
+                continue
+    
+        self.logger.info(f"GET/JSON loop stopped for {self.name} (no entities)")
         self.running = False
+
+    async def error_getjson(self, err):
+        """Returns null data to mark entities as "not available" after some time"""
+        await asyncio.sleep(20)
+        if not self.getjson_ok:
+            self.data = {}
+            self.async_set_update_error(Exception(err))
 
     async def loop_websocket(self):
         """Main loop: receive websockets"""
