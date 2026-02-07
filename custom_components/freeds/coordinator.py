@@ -165,84 +165,54 @@ class FreeDSCoordinator(DataUpdateCoordinator):
             pass
 
     async def loop_getjson(self):
-        """Main loop: polling GET/JSON endpoint"""
+        #Firmwares >= V2.0.2 and workaround for buggy firmwares V1.1.0021 and V2.0.0
+        """Main loop: polling GET/JSON endpoint with protocol error recovery."""
         self.logger.info(f"Starting GET/JSON loop for {self.name}")
         url = f"http://{self.host}:{self.port}/json"
         headers = {"Connection": "close"}
         decoder = json.JSONDecoder()
-    
+
         while self._listeners:
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
-                        if response.status == 200:
-                            try:
-                                # Intenta primer el mètode normal (firmware nou)
-                                data = await response.json()
-                                self.getjson_ok = True
-                                self.async_set_updated_data(data)
-                            except (json.JSONDecodeError, aiohttp.ClientPayloadError) as json_err:
-                                # Si falla, usa el mètode per firmware vell
-                                self.logger.debug(f"Standard JSON parsing failed, trying old firmware method: {json_err}")
-                                
-                                # Read all available content, ignoring protocol errors
-                                chunks = []
-                                try:
-                                    async for chunk in response.content.iter_any():
-                                        chunks.append(chunk)
-                                except Exception as stream_err:
-                                    self.logger.debug(f"Stream ended with error (expected for old firmware): {stream_err}")
-                            
-                                # Combine all chunks into text
-                                raw_bytes = b''.join(chunks)
-                                text_data = raw_bytes.decode('utf-8', errors='ignore')
-                            
-                                # Parse the JSON object
-                                data, _ = decoder.raw_decode(text_data)
-                                self.getjson_ok = True
-                                self.async_set_updated_data(data)
-                                self.logger.info(f"Successfully parsed JSON using old firmware method for {self.name}")
-                        else:
-                            self.logger.warning(
-                                f"{self.name} GET request failed with status {response.status}"
-                            )
-                            self.getjson_ok = False
-                            asyncio.create_task(self.error_getjson(Exception(f"HTTP {response.status}")))
-            
-                # Espera abans de la següent petició
-                await asyncio.sleep(5)
-            
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                if not self._listeners:
-                    break
-                
-                # Try to extract JSON from error message as fallback (for old firmware 1.1.0021 and 2.0.0)
-                err_msg = str(err)
-                if "{" in err_msg:
-                    try:
-                        start_idx = err_msg.find("{")
-                        potential_json = err_msg[start_idx:]
-                        data, _ = decoder.raw_decode(potential_json)
-                        self.logger.info(f"{self.name}: Recovered JSON from error message (old firmware).")
+                # Use the existing coordinator session
+                async with self.session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                    if response.status == 200:
+                        # Standard firmware behavior. Firmwares >= V2.0.2
+                        data = await response.json()
                         self.getjson_ok = True
                         self.async_set_updated_data(data)
-                        await asyncio.sleep(5)
-                        continue
+                    else:
+                        self.logger.warning(f"{self.name} GET failed with status {response.status}")
+                        self.getjson_ok = False
+                        asyncio.create_task(self.error_getjson(Exception(f"HTTP {response.status}")))
+
+            except Exception as err:
+                # workaround for buggy firmwares V1.1.0021 and V2.0.0
+                # STRATEGY: aiohttp throws 'Data after Connection: close' BEFORE we can read the body.
+                # The valid JSON is usually inside the error message itself.
+                error_msg = str(err)
+                if "{" in error_msg:
+                    try:
+                        json_start = error_msg.find("{")
+                        # decoder.raw_decode extracts the JSON object and ignores the trailing garbage
+                        data, _ = decoder.raw_decode(error_msg[json_start:])
+
+                        self.getjson_ok = True
+                        self.async_set_updated_data(data)
+                        self.logger.debug(f"Recovered JSON from protocol exception for {self.name}")
                     except Exception:
-                        pass
-            
-                self.getjson_ok = False
-                asyncio.create_task(self.error_getjson(err))
-                self.logger.error(
-                    f"{self.name} ({self.host}:{self.port}) GET/JSON error: {err}"
-                )
-                await asyncio.sleep(10)
-                self.logger.info(
-                    f"{self.name} ({self.host}:{self.port}) retrying GET/JSON..."
-                )
-                continue
-    
-        self.logger.info(f"GET/JSON loop stopped for {self.name} (no entities)")
+                        self.getjson_ok = False
+                        self.logger.debug(f"Could not recover JSON from error: {err}")
+                else:
+                    # Genuine connection error
+                    self.getjson_ok = False
+                    self.logger.debug(f"Connection error for {self.name}: {err}")
+                    asyncio.create_task(self.error_getjson(err))
+
+            # Wait 5 seconds before next poll
+            await asyncio.sleep(5)
+
+        self.logger.info(f"GET/JSON loop stopped for {self.name}")
         self.running = False
 
     async def error_getjson(self, err):
@@ -251,6 +221,7 @@ class FreeDSCoordinator(DataUpdateCoordinator):
         if not self.getjson_ok:
             self.data = {}
             self.async_set_update_error(Exception(err))
+
 
     async def loop_websocket(self):
         """Main loop: receive websockets"""
