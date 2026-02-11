@@ -9,6 +9,6 @@
 	"iot_class": "local_push",
 	"issue_tracker": "https://gitlab.com/IvanSanchez/homeassistant-freeds/-/issues",
 	"requirements": ["websockets"],
-	"version": "0.12.0",
+	"version": "0.13.0",
 	"zeroconf": ["_freeds._tcp.local."]
 }
