@@ -65,7 +65,8 @@ class FreeDSLight(FreeDSEntity, LightEntity):
 
         # Instance attributes built into LightEntity
         self._attr_brightness = None
-        self._attr_supported_color_modes = set(ColorMode.BRIGHTNESS)
+        self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+        self._attr_color_mode = ColorMode.BRIGHTNESS
 
         # FreeDS-specific
         self._button_idx = button_idx
