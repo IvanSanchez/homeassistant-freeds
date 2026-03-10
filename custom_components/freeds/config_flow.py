@@ -151,7 +151,7 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             ### TODO: Fetch the MAC, not just the hostname.
             ### This depends on a firmware update, see https://github.com/pablozg/freeds/issues/82
-            hostname = re.search("FreeDS \((.*)\)", json["title"]).groups()[0]
+            hostname = re.search(r"FreeDS \((.*)\)", json["title"]).groups()[0]
             uniqueid = hostname[-4:]
 
             _LOGGER.info(
@@ -224,9 +224,12 @@ class FreeDSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Scrape hostname (which, by default, contains the 4-hexdigit unique ID)
             # from the network configuration webpage
             hostname = re.search(
-                '<label class="col-sm-4 form-control-label language" key="HOSTNAME"></label>\s+<div class="col-sm-8 mg-t-10 mg-sm-t-0">\s+                                                            <input id=\'host\' name="host" type="text" maxlength="11" class="form-control" value="(.*)">\s+</div>',
+                r'<label class="col-sm-4 form-control-label language" key="HOSTNAME"></label>\s+'
+                r'<div class="col-sm-8 mg-t-10 mg-sm-t-0">\s+'
+                r'<input id=\'host\' name="host" type="text" maxlength="11" class="form-control" value="(.*)">\s+'
+                r'</div>',
                 html,
-            ).groups()[0]
+            ).group(1)
 
             uniqueid = hostname[-4:]
 
